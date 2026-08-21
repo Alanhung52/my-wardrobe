@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Wardrobe - UNIQLO & GU Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* UNIQLO Red: #E60012 | GU Dark Blue: #002244 | GU Yellow: #FFDD00 */
+        .bg-uq { background-color: #E60012; }
+        .bg-gu { background-color: #002244; }
+        .text-gu-yellow { color: #FFDD00; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-900 pb-20">
+
+    <!-- Header (UNIQLO 風格紅底白字 Header) -->
+    <header class="bg-uq text-white p-4 text-center font-black text-xl tracking-widest shadow-md sticky top-0 z-50">
+        MY WARDROBE
+        <span class="block text-xs font-normal opacity-90 mt-0.5">UNIQLO & GU Digital Closet</span>
+    </header>
+
+    <main class="max-w-md mx-auto p-4">
+        
+        <!-- 新增衣物表單區塊 -->
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
+            <h2 class="font-bold text-base mb-3 border-b-2 border-red-600 pb-1">➕ 新增單品 / 尺寸資料</h2>
+            
+            <form id="itemForm" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">品牌</label>
+                    <select id="brand" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-red-500 outline-none">
+                        <option value="UNIQLO">UNIQLO</option>
+                        <option value="GU">GU</option>
+                        <option value="Other">其他品牌</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">品名 / 貨號</label>
+                    <input type="text" id="name" placeholder="例：寬版圓領 T 恤 (#465185)" class="w-full border rounded p-2 text-sm" required>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">類別</label>
+                        <select id="category" class="w-full border rounded p-2 text-sm">
+                            <option value="上衣">上衣</option>
+                            <option value="褲子/下身">褲子 / 下身</option>
+                            <option value="外套">外套</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">購買尺寸</label>
+                        <input type="text" id="size" placeholder="例：L / M" class="w-full border rounded p-2 text-sm">
+                    </div>
+                </div>
+
+                <!-- 尺寸細節 (公分) -->
+                <div class="bg-gray-50 p-2.5 rounded border border-gray-200">
+                    <span class="block text-xs font-bold text-gray-700 mb-2">📏 精確尺寸紀錄 (cm)</span>
+                    <div class="grid grid-cols-3 gap-2">
+                        <input type="number" id="length" placeholder="衣長/股下" class="border rounded p-1.5 text-xs">
+                        <input type="number" id="shoulder" placeholder="肩寬/腰圍" class="border rounded p-1.5 text-xs">
+                        <input type="number" id="chest" placeholder="胸寬/腿寬" class="border rounded p-1.5 text-xs">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">官網穿搭照 URL / 連結</label>
+                    <input type="url" id="imgUrl" placeholder="貼上 StylingBook 或商品圖片網址" class="w-full border rounded p-2 text-sm">
+                </div>
+
+                <button type="submit" class="w-full bg-uq text-white font-bold py-2.5 rounded hover:opacity-90 transition text-sm shadow">
+                    儲存至數位衣櫥
+                </button>
+            </form>
+        </div>
+
+        <!-- 單品列表展示區 -->
+        <div id="wardrobeList" class="space-y-4">
+            <!-- 動態儲存的衣物會顯示在這裡 -->
+        </div>
+
+    </main>
+
+    <script>
+        // 利用瀏覽器本地 LocalStorage 儲存資料
+        let wardrobe = JSON.parse(localStorage.getItem('myWardrobe')) || [];
+
+        function renderList() {
+            const listDiv = document.getElementById('wardrobeList');
+            listDiv.innerHTML = '';
+
+            if(wardrobe.length === 0) {
+                listDiv.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">目前衣櫥是空的，請上方新增單品！</div>`;
+                return;
+            }
+
+            wardrobe.forEach((item, index) => {
+                const isUQ = item.brand === 'UNIQLO';
+                const brandBadge = isUQ 
+                    ? `<span class="bg-uq text-white px-2 py-0.5 text-xs font-bold rounded">UNIQLO</span>`
+                    : `<span class="bg-gu text-gu-yellow px-2 py-0.5 text-xs font-bold rounded">GU</span>`;
+
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden";
+                card.innerHTML = `
+                    ${item.imgUrl ? `<img src="${item.imgUrl}" class="w-full h-48 object-cover bg-gray-100" alt="穿搭圖">` : ''}
+                    <div class="p-3">
+                        <div class="flex justify-between items-center mb-1">
+                            ${brandBadge}
+                            <span class="text-xs text-gray-500 font-bold">${item.category} (${item.size})</span>
+                        </div>
+                        <h3 class="font-bold text-sm text-gray-800 mb-2">${item.name}</h3>
+                        
+                        <div class="bg-gray-50 p-2 rounded text-xs text-gray-600 space-y-1 border border-gray-100">
+                            <div class="font-bold text-gray-700">尺寸公分數據：</div>
+                            <div class="grid grid-cols-3 gap-1 text-center">
+                                <span class="bg-white border rounded py-0.5">長度: ${item.length || '-'} cm</span>
+                                <span class="bg-white border rounded py-0.5">寬度: ${item.shoulder || '-'} cm</span>
+                                <span class="bg-white border rounded py-0.5">圍度: ${item.chest || '-'} cm</span>
+                            </div>
+                        </div>
+
+                        <button onclick="deleteItem(${index})" class="mt-3 text-xs text-red-500 hover:underline w-full text-right">刪除這件單品</button>
+                    </div>
+                `;
+                listDiv.appendChild(card);
+            });
+        }
+
+        document.getElementById('itemForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newItem = {
+                brand: document.getElementById('brand').value,
+                name: document.getElementById('name').value,
+                category: document.getElementById('category').value,
+                size: document.getElementById('size').value,
+                length: document.getElementById('length').value,
+                shoulder: document.getElementById('shoulder').value,
+                chest: document.getElementById('chest').value,
+                imgUrl: document.getElementById('imgUrl').value
+            };
+            wardrobe.push(newItem);
+            localStorage.setItem('myWardrobe', JSON.stringify(wardrobe));
+            renderList();
+            e.target.reset();
+        });
+
+        function deleteItem(index) {
+            if(confirm('確定要刪除這件衣服嗎？')) {
+                wardrobe.splice(index, 1);
+                localStorage.setItem('myWardrobe', JSON.stringify(wardrobe));
+                renderList();
+            }
+        }
+
+        renderList();
+    </script>
+</body>
+</html>
