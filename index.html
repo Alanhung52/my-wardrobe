@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Wardrobe - UNIQLO & GU Style</title>
+    <title>My Wardrobe - UNIQLO & GU Style (Cloud Sync)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* UNIQLO Red: #E60012 | GU Dark Blue: #002244 | GU Yellow: #FFDD00 */
         .bg-uq { background-color: #E60012; }
         .bg-gu { background-color: #002244; }
         .text-gu-yellow { color: #FFDD00; }
@@ -14,10 +13,10 @@
 </head>
 <body class="bg-gray-100 font-sans text-gray-900 pb-20">
 
-    <!-- Header (UNIQLO 風格紅底白字 Header) -->
+    <!-- Header -->
     <header class="bg-uq text-white p-4 text-center font-black text-xl tracking-widest shadow-md sticky top-0 z-50">
         MY WARDROBE
-        <span class="block text-xs font-normal opacity-90 mt-0.5">UNIQLO & GU Digital Closet</span>
+        <span class="block text-xs font-normal opacity-90 mt-0.5">UNIQLO & GU Cloud Wardrobe</span>
     </header>
 
     <main class="max-w-md mx-auto p-4">
@@ -71,33 +70,55 @@
                     <input type="url" id="imgUrl" placeholder="貼上 StylingBook 或商品圖片網址" class="w-full border rounded p-2 text-sm">
                 </div>
 
-                <button type="submit" class="w-full bg-uq text-white font-bold py-2.5 rounded hover:opacity-90 transition text-sm shadow">
-                    儲存至數位衣櫥
+                <button type="submit" id="submitBtn" class="w-full bg-uq text-white font-bold py-2.5 rounded hover:opacity-90 transition text-sm shadow">
+                    上傳儲存至雲端衣櫥
                 </button>
             </form>
         </div>
 
         <!-- 單品列表展示區 -->
         <div id="wardrobeList" class="space-y-4">
-            <!-- 動態儲存的衣物會顯示在這裡 -->
+            <div class="text-center py-8 text-gray-400 text-sm">雲端資料載入中...</div>
         </div>
 
     </main>
 
-    <script>
-        // 利用瀏覽器本地 LocalStorage 儲存資料
-        let wardrobe = JSON.parse(localStorage.getItem('myWardrobe')) || [];
+    <!-- 載入 Firebase SDK (v10) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        function renderList() {
-            const listDiv = document.getElementById('wardrobeList');
+        // 已填入你的專屬 Firebase 金鑰
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwF163OMp-1sPCV9xHsORYemEy97YPCkI",
+            authDomain: "mywardrobe-c7e74.firebaseapp.com",
+            databaseURL: "https://mywardrobe-c7e74-default-rtdb.firebaseio.com",
+            projectId: "mywardrobe-c7e74",
+            storageBucket: "mywardrobe-c7e74.firebasestorage.app",
+            messagingSenderId: "629621991380",
+            appId: "1:629621991380:web:5ab788261e3ec50a79d841",
+            measurementId: "G-MX1LL0RT99"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const wardrobeRef = ref(db, 'wardrobe');
+
+        const listDiv = document.getElementById('wardrobeList');
+
+        // 實時監聽雲端資料庫變更 (手機/電腦同步的關鍵)
+        onValue(wardrobeRef, (snapshot) => {
+            const data = snapshot.val();
             listDiv.innerHTML = '';
 
-            if(wardrobe.length === 0) {
-                listDiv.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">目前衣櫥是空的，請上方新增單品！</div>`;
+            if (!data) {
+                listDiv.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">目前衣櫥是空的，請新增單品！</div>`;
                 return;
             }
 
-            wardrobe.forEach((item, index) => {
+            Object.keys(data).forEach((id) => {
+                const item = data[id];
                 const isUQ = item.brand === 'UNIQLO';
                 const brandBadge = isUQ 
                     ? `<span class="bg-uq text-white px-2 py-0.5 text-xs font-bold rounded">UNIQLO</span>`
@@ -110,7 +131,7 @@
                     <div class="p-3">
                         <div class="flex justify-between items-center mb-1">
                             ${brandBadge}
-                            <span class="text-xs text-gray-500 font-bold">${item.category} (${item.size})</span>
+                            <span class="text-xs text-gray-500 font-bold">${item.category} (${item.size || 'F'})</span>
                         </div>
                         <h3 class="font-bold text-sm text-gray-800 mb-2">${item.name}</h3>
                         
@@ -123,13 +144,24 @@
                             </div>
                         </div>
 
-                        <button onclick="deleteItem(${index})" class="mt-3 text-xs text-red-500 hover:underline w-full text-right">刪除這件單品</button>
+                        <button data-id="${id}" class="delete-btn mt-3 text-xs text-red-500 hover:underline w-full text-right">刪除這件單品</button>
                     </div>
                 `;
                 listDiv.appendChild(card);
             });
-        }
 
+            // 綁定刪除事件
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    if (confirm('確定要從雲端刪除這件衣服嗎？')) {
+                        remove(ref(db, `wardrobe/${id}`));
+                    }
+                });
+            });
+        });
+
+        // 表單送出至雲端
         document.getElementById('itemForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const newItem = {
@@ -140,23 +172,18 @@
                 length: document.getElementById('length').value,
                 shoulder: document.getElementById('shoulder').value,
                 chest: document.getElementById('chest').value,
-                imgUrl: document.getElementById('imgUrl').value
+                imgUrl: document.getElementById('imgUrl').value,
+                createdAt: Date.now()
             };
-            wardrobe.push(newItem);
-            localStorage.setItem('myWardrobe', JSON.stringify(wardrobe));
-            renderList();
-            e.target.reset();
+
+            // 推送到 Firebase
+            push(wardrobeRef, newItem).then(() => {
+                e.target.reset();
+            }).catch(error => {
+                alert('上傳失敗，請確認已在 Firebase 開啟 Realtime Database！');
+                console.error(error);
+            });
         });
-
-        function deleteItem(index) {
-            if(confirm('確定要刪除這件衣服嗎？')) {
-                wardrobe.splice(index, 1);
-                localStorage.setItem('myWardrobe', JSON.stringify(wardrobe));
-                renderList();
-            }
-        }
-
-        renderList();
     </script>
 </body>
 </html>
