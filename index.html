@@ -9,97 +9,161 @@
         .bg-uq { background-color: #E60012; }
         .bg-gu { background-color: #002244; }
         .text-gu-yellow { color: #FFDD00; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-900 pb-20">
+<body class="bg-gray-100 font-sans text-gray-900 pb-24">
 
-    <!-- Header (已移除次標題) -->
-    <header class="bg-uq text-white p-4 text-center font-black text-xl tracking-widest shadow-md sticky top-0 z-50">
+    <!-- Header -->
+    <header class="bg-uq text-white p-4 text-center font-black text-xl tracking-widest shadow-md sticky top-0 z-40">
         MY WARDROBE
     </header>
 
     <main class="max-w-md mx-auto p-4">
         
-        <!-- 新增衣物表單區塊 -->
-        <div class="bg-white rounded-lg shadow-sm p-4 mb-6 border border-gray-200">
-            <h2 class="font-bold text-base mb-3 border-b-2 border-red-600 pb-1">➕ 新增單品 / 尺寸資料</h2>
-            
-            <form id="itemForm" class="space-y-3">
-                <!-- 品牌選擇 -->
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1">品牌</label>
-                    <select id="brandSelect" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-red-500 outline-none">
-                        <option value="UNIQLO">UNIQLO</option>
-                        <option value="GU">GU</option>
-                        <option value="Other">其他品牌</option>
-                    </select>
-                    <!-- 選擇其他品牌時彈出的輸入框 -->
-                    <input type="text" id="customBrand" placeholder="請輸入品牌名稱" class="w-full border rounded p-2 text-sm mt-2 hidden">
+        <!-- ================= 頁面 1：檢視庫存 (預設) ================= -->
+        <div id="tabInventory" class="space-y-4">
+            <!-- 搜尋與分類區 -->
+            <div class="bg-white rounded-lg shadow-sm p-3 border border-gray-200 space-y-3">
+                <div class="relative">
+                    <input type="text" id="searchInput" placeholder="🔍 搜尋品名、品牌或顏色..." class="w-full bg-gray-50 border border-gray-200 rounded-full py-2 px-4 text-xs focus:ring-2 focus:ring-red-500 outline-none">
                 </div>
-
-                <!-- 品名與顏色 -->
-                <div class="grid grid-cols-3 gap-2">
-                    <div class="col-span-2">
-                        <label class="block text-xs font-bold text-gray-600 mb-1">品名 / 貨號</label>
-                        <input type="text" id="name" placeholder="例：寬版圓領 T 恤 (#465185)" class="w-full border rounded p-2 text-sm" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">顏色</label>
-                        <input type="text" id="color" placeholder="例：黑色 / 09" class="w-full border rounded p-2 text-sm">
-                    </div>
+                
+                <div id="categoryFilterBar" class="flex space-x-2 overflow-x-auto no-scrollbar py-1">
+                    <!-- 動態載入分類按鈕 -->
                 </div>
+            </div>
 
-                <!-- 類別與購買尺寸 -->
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">類別</label>
-                        <select id="category" class="w-full border rounded p-2 text-sm">
-                            <option value="上衣">上衣</option>
-                            <option value="褲子/下身">褲子 / 下身</option>
-                            <option value="外套">外套</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">標籤尺寸</label>
-                        <input type="text" id="size" placeholder="例：L / M / 30" class="w-full border rounded p-2 text-sm">
-                    </div>
-                </div>
-
-                <!-- 自訂公分尺寸細節 -->
-                <div class="bg-gray-50 p-3 rounded border border-gray-200">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-xs font-bold text-gray-700">📏 精確尺寸紀錄 (cm)</span>
-                        <button type="button" id="addSizeBtn" class="text-xs text-red-600 font-bold hover:underline">+ 增加尺寸部位</button>
-                    </div>
-                    
-                    <div id="sizeFieldsContainer" class="space-y-2">
-                        <!-- 動態尺寸輸入框會放這裡 -->
-                    </div>
-                </div>
-
-                <!-- 官網圖片網址 -->
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1">官網穿搭照 URL / 連結</label>
-                    <input type="url" id="imgUrl" placeholder="貼上 StylingBook 或商品圖片網址" class="w-full border rounded p-2 text-sm">
-                </div>
-
-                <button type="submit" id="submitBtn" class="w-full bg-uq text-white font-bold py-2.5 rounded hover:opacity-90 transition text-sm shadow">
-                    上傳儲存至雲端衣櫥
-                </button>
-            </form>
+            <!-- 衣物卡片列表區 -->
+            <div id="wardrobeList" class="space-y-4">
+                <div class="text-center py-8 text-gray-400 text-sm">雲端資料載入中...</div>
+            </div>
         </div>
 
-        <!-- 單品列表展示區 -->
-        <div id="wardrobeList" class="space-y-4">
-            <div class="text-center py-8 text-gray-400 text-sm">雲端資料載入中...</div>
+        <!-- ================= 頁面 2：新增單品 (預設隱藏) ================= -->
+        <div id="tabAdd" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
+                <h2 class="font-bold text-base mb-3 border-b-2 border-red-600 pb-1">➕ 新增單品 / 尺寸資料</h2>
+                
+                <form id="itemForm" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">品牌</label>
+                        <select id="brandSelect" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-red-500 outline-none">
+                            <option value="UNIQLO">UNIQLO</option>
+                            <option value="GU">GU</option>
+                            <option value="Other">其他品牌</option>
+                        </select>
+                        <input type="text" id="customBrand" placeholder="請輸入品牌名稱" class="w-full border rounded p-2 text-sm mt-2 hidden">
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="col-span-2">
+                            <label class="block text-xs font-bold text-gray-600 mb-1">品名 / 貨號</label>
+                            <input type="text" id="name" placeholder="例：寬版圓領 T 恤 (#465185)" class="w-full border rounded p-2 text-sm" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">顏色</label>
+                            <input type="text" id="color" placeholder="例：黑色 / 09" class="w-full border rounded p-2 text-sm">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">類別</label>
+                            <select id="categorySelect" class="w-full border rounded p-2 text-sm">
+                                <!-- 動態類別 -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">標籤尺寸</label>
+                            <input type="text" id="size" placeholder="例：L / M / 30" class="w-full border rounded p-2 text-sm">
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-3 rounded border border-gray-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-gray-700">📏 精確尺寸紀錄 (cm)</span>
+                            <button type="button" id="addSizeBtn" class="text-xs text-red-600 font-bold hover:underline">+ 增加尺寸部位</button>
+                        </div>
+                        <div id="sizeFieldsContainer" class="space-y-2">
+                            <!-- 動態尺寸輸入框 -->
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">衣服照片 (上傳圖片 或 貼上網址)</label>
+                        <input type="file" id="imageFileInput" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 mb-2">
+                        <input type="url" id="imgUrl" placeholder="或貼上 StylingBook 官網圖片網址" class="w-full border rounded p-2 text-sm">
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="w-full bg-uq text-white font-bold py-2.5 rounded hover:opacity-90 transition text-sm shadow">
+                        上傳儲存至雲端衣櫥
+                    </button>
+                </form>
+            </div>
         </div>
 
     </main>
 
-    <!-- 載入 Firebase SDK (v10) -->
+    <!-- 底部 Tab 導覽列 -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around p-2 z-50 max-w-md mx-auto">
+        <button id="navInventoryBtn" class="flex-1 py-1.5 text-center text-red-600 font-bold text-xs flex flex-col items-center">
+            <span class="text-lg">📦</span> 檢視庫存
+        </button>
+        <button id="navAddBtn" class="flex-1 py-1.5 text-center text-gray-500 font-bold text-xs flex flex-col items-center">
+            <span class="text-lg">➕</span> 新增單品
+        </button>
+    </nav>
+
+    <!-- 編輯 Modal 彈出視窗 -->
+    <div id="editModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-lg p-4 w-full max-w-sm max-h-[90vh] overflow-y-auto space-y-3">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-sm">✏️ 編輯衣物資料</h3>
+                <button id="closeEditModal" class="text-gray-400 hover:text-black font-bold">✕</button>
+            </div>
+            <form id="editForm" class="space-y-3 text-xs">
+                <input type="hidden" id="editItemId">
+                <div>
+                    <label class="font-bold text-gray-600">品名</label>
+                    <input type="text" id="editName" class="w-full border rounded p-1.5 mt-1" required>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="font-bold text-gray-600">顏色</label>
+                        <input type="text" id="editColor" class="w-full border rounded p-1.5 mt-1">
+                    </div>
+                    <div>
+                        <label class="font-bold text-gray-600">標籤尺寸</label>
+                        <input type="text" id="editSize" class="w-full border rounded p-1.5 mt-1">
+                    </div>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">類別</label>
+                    <select id="editCategorySelect" class="w-full border rounded p-1.5 mt-1"></select>
+                </div>
+                <div class="bg-gray-50 p-2 rounded border space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-gray-700">尺寸數據 (cm)</span>
+                        <button type="button" id="addEditSizeBtn" class="text-red-600 font-bold">+ 增加部位</button>
+                    </div>
+                    <div id="editSizeContainer" class="space-y-1.5"></div>
+                </div>
+                <div>
+                    <label class="font-bold text-gray-600">更新圖片 (選填)</label>
+                    <input type="file" id="editImageFileInput" accept="image/*" class="w-full mt-1">
+                    <input type="url" id="editImgUrl" placeholder="或貼上圖片網址" class="w-full border rounded p-1.5 mt-1">
+                </div>
+                <button type="submit" class="w-full bg-uq text-white font-bold py-2 rounded text-sm shadow">更新資料</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBwF163OMp-1sPCV9xHsORYemEy97YPCkI",
@@ -116,102 +180,163 @@
         const db = getDatabase(app);
         const wardrobeRef = ref(db, 'wardrobe');
 
-        // 其他品牌選單切換控制
+        let categories = ["外套類", "T恤/休閒", "短袖/背心", "POLO衫", "襯衫", "針織衫/開襟外套", "下身類(褲子)", "牛仔褲", "內衣/褲子/襪子", "家居系列", "配件類"];
+        let sizeOptions = ["衣長 / 總長", "肩寬", "胸寬", "連肩袖長", "腰圍", "臀圍", "股上 (褲檔)", "股下 (褲長)", "腿圍"];
+
+        let allData = {};
+        let currentCategoryFilter = "ALL";
+        let currentSearchQuery = "";
+
+        // Tab 切換邏輯
+        const tabInventory = document.getElementById('tabInventory');
+        const tabAdd = document.getElementById('tabAdd');
+        const navInventoryBtn = document.getElementById('navInventoryBtn');
+        const navAddBtn = document.getElementById('navAddBtn');
+
+        navInventoryBtn.addEventListener('click', () => {
+            tabInventory.classList.remove('hidden');
+            tabAdd.classList.add('hidden');
+            navInventoryBtn.className = "flex-1 py-1.5 text-center text-red-600 font-bold text-xs flex flex-col items-center";
+            navAddBtn.className = "flex-1 py-1.5 text-center text-gray-500 font-bold text-xs flex flex-col items-center";
+        });
+
+        navAddBtn.addEventListener('click', () => {
+            tabAdd.classList.remove('hidden');
+            tabInventory.classList.add('hidden');
+            navAddBtn.className = "flex-1 py-1.5 text-center text-red-600 font-bold text-xs flex flex-col items-center";
+            navInventoryBtn.className = "flex-1 py-1.5 text-center text-gray-500 font-bold text-xs flex flex-col items-center";
+        });
+
+        // 類別選單渲染
+        function renderCategorySelects() {
+            const optionsHtml = categories.map(c => `<option value="${c}">${c}</option>`).join('') + `<option value="ADD_NEW">+ 新增自訂類別...</option>`;
+            document.getElementById('categorySelect').innerHTML = optionsHtml;
+            document.getElementById('editCategorySelect').innerHTML = optionsHtml;
+        }
+
+        document.getElementById('categorySelect').addEventListener('change', (e) => handleCategoryAdd(e));
+        document.getElementById('editCategorySelect').addEventListener('change', (e) => handleCategoryAdd(e));
+
+        function handleCategoryAdd(e) {
+            if (e.target.value === 'ADD_NEW') {
+                const newCat = prompt('請輸入新的類別名稱：');
+                if (newCat && newCat.trim() !== '') {
+                    const trimmed = newCat.trim();
+                    if (!categories.includes(trimmed)) categories.push(trimmed);
+                    renderCategorySelects();
+                    renderCategoryFilterBar();
+                    e.target.value = trimmed;
+                } else {
+                    e.target.value = categories[0];
+                }
+            }
+        }
+
+        function renderCategoryFilterBar() {
+            const bar = document.getElementById('categoryFilterBar');
+            let html = `<button data-cat="ALL" class="cat-filter-btn px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${currentCategoryFilter === 'ALL' ? 'bg-uq text-white' : 'bg-gray-100 text-gray-600'} shadow-sm">全部單品</button>`;
+            categories.forEach(c => {
+                const active = currentCategoryFilter === c;
+                html += `<button data-cat="${c}" class="cat-filter-btn px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${active ? 'bg-uq text-white' : 'bg-gray-100 text-gray-600'} shadow-sm">${c}</button>`;
+            });
+            bar.innerHTML = html;
+            document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentCategoryFilter = btn.getAttribute('data-cat');
+                    renderCategoryFilterBar();
+                    renderList();
+                });
+            });
+        }
+
+        // 品牌選單切換
         const brandSelect = document.getElementById('brandSelect');
         const customBrandInput = document.getElementById('customBrand');
         brandSelect.addEventListener('change', () => {
-            if (brandSelect.value === 'Other') {
-                customBrandInput.classList.remove('hidden');
-            } else {
-                customBrandInput.classList.add('hidden');
-            }
+            if (brandSelect.value === 'Other') customBrandInput.classList.remove('hidden');
+            else customBrandInput.classList.add('hidden');
         });
 
-        // 動態尺寸部位對應選單
-        const sizeOptions = [
-            "衣長 / 總長", "肩寬", "胸寬", "連肩袖長", 
-            "腰圍", "臀圍", "股上 (褲檔)", "股下 (褲長)", "腿圍"
-        ];
-
-        const sizeFieldsContainer = document.getElementById('sizeFieldsContainer');
-        const addSizeBtn = document.getElementById('addSizeBtn');
-
-        // 建立單個尺寸輸入列
-        function createSizeRow(defaultType = "衣長 / 總長", defaultValue = "") {
+        // 尺寸輸入欄位生成
+        function createSizeRow(container, defaultType = sizeOptions[0], defaultValue = "") {
             const row = document.createElement('div');
             row.className = "flex items-center space-x-2 size-row";
-            
-            let optionsHtml = sizeOptions.map(opt => `<option value="${opt}" ${opt === defaultType ? 'selected' : ''}>${opt}</option>`).join('');
+            let optionsHtml = sizeOptions.map(opt => `<option value="${opt}" ${opt === defaultType ? 'selected' : ''}>${opt}</option>`).join('') + `<option value="ADD_NEW">+ 自訂部位...</option>`;
             
             row.innerHTML = `
-                <select class="size-type border rounded p-1.5 text-xs w-1/2 bg-white">
-                    ${optionsHtml}
-                </select>
+                <select class="size-type border rounded p-1.5 text-xs w-1/2 bg-white">${optionsHtml}</select>
                 <input type="number" step="0.1" value="${defaultValue}" placeholder="公分 (cm)" class="size-value border rounded p-1.5 text-xs w-1/2">
                 <button type="button" class="remove-size-btn text-gray-400 hover:text-red-500 font-bold px-1 text-sm">✕</button>
             `;
 
-            row.querySelector('.remove-size-btn').addEventListener('click', () => {
-                if (document.querySelectorAll('.size-row').length > 1) {
-                    row.remove();
-                } else {
-                    alert('最少需保留一個尺寸欄位！');
+            row.querySelector('.size-type').addEventListener('change', (e) => {
+                if (e.target.value === 'ADD_NEW') {
+                    const newType = prompt('請輸入自訂部位名稱：');
+                    if (newType && newType.trim() !== '') {
+                        const trimmed = newType.trim();
+                        if (!sizeOptions.includes(trimmed)) sizeOptions.push(trimmed);
+                        e.target.innerHTML = sizeOptions.map(opt => `<option value="${opt}" ${opt === trimmed ? 'selected' : ''}>${opt}</option>`).join('') + `<option value="ADD_NEW">+ 自訂部位...</option>`;
+                    } else {
+                        e.target.value = sizeOptions[0];
+                    }
                 }
             });
 
-            sizeFieldsContainer.appendChild(row);
+            row.querySelector('.remove-size-btn').addEventListener('click', () => row.remove());
+            container.appendChild(row);
         }
 
-        // 預設建立 1 個尺寸輸入欄位
-        createSizeRow("衣長 / 總長");
-
-        // 點擊新增按鈕
-        addSizeBtn.addEventListener('click', () => {
-            const currentCount = document.querySelectorAll('.size-row').length;
-            const nextDefault = sizeOptions[currentCount % sizeOptions.length];
-            createSizeRow(nextDefault);
+        document.getElementById('addSizeBtn').addEventListener('click', () => {
+            createSizeRow(document.getElementById('sizeFieldsContainer'));
+        });
+        document.getElementById('addEditSizeBtn').addEventListener('click', () => {
+            createSizeRow(document.getElementById('editSizeContainer'));
         });
 
-        // 實時監聽雲端資料庫變更
-        const listDiv = document.getElementById('wardrobeList');
-        onValue(wardrobeRef, (snapshot) => {
-            const data = snapshot.val();
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            currentSearchQuery = e.target.value.toLowerCase().trim();
+            renderList();
+        });
+
+        // 渲染列表 (自然比例圖片展示 + 編輯按鈕)
+        function renderList() {
+            const listDiv = document.getElementById('wardrobeList');
             listDiv.innerHTML = '';
 
-            if (!data) {
+            if (!allData || Object.keys(allData).length === 0) {
                 listDiv.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">目前衣櫥是空的，請新增單品！</div>`;
                 return;
             }
 
-            Object.keys(data).forEach((id) => {
-                const item = data[id];
-                
-                // 品牌 Badge 標籤處理
-                let brandBadge = '';
-                if (item.brand === 'UNIQLO') {
-                    brandBadge = `<span class="bg-uq text-white px-2 py-0.5 text-xs font-bold rounded">UNIQLO</span>`;
-                } else if (item.brand === 'GU') {
-                    brandBadge = `<span class="bg-gu text-gu-yellow px-2 py-0.5 text-xs font-bold rounded">GU</span>`;
-                } else {
-                    brandBadge = `<span class="bg-gray-700 text-white px-2 py-0.5 text-xs font-bold rounded">${item.brand}</span>`;
-                }
+            let filteredKeys = Object.keys(allData).filter(id => {
+                const item = allData[id];
+                const matchCat = currentCategoryFilter === 'ALL' || item.category === currentCategoryFilter;
+                const matchQuery = !currentSearchQuery || 
+                    (item.name && item.name.toLowerCase().includes(currentSearchQuery)) ||
+                    (item.brand && item.brand.toLowerCase().includes(currentSearchQuery)) ||
+                    (item.color && item.color.toLowerCase().includes(currentSearchQuery));
+                return matchCat && matchQuery;
+            });
 
-                // 尺寸數據展現處理
-                let sizesHtml = '';
-                if (item.customSizes && item.customSizes.length > 0) {
-                    sizesHtml = item.customSizes.map(s => `
-                        <span class="bg-white border rounded px-2 py-1 text-xs">
-                            ${s.type}: <strong class="text-gray-800">${s.val} cm</strong>
-                        </span>
-                    `).join('');
-                } else {
-                    sizesHtml = `<span class="text-gray-400 text-xs">未填寫細節尺寸</span>`;
-                }
+            if (filteredKeys.length === 0) {
+                listDiv.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">找不到符合條件的單品</div>`;
+                return;
+            }
+
+            filteredKeys.forEach((id) => {
+                const item = allData[id];
+                let brandBadge = item.brand === 'UNIQLO' ? `<span class="bg-uq text-white px-2 py-0.5 text-xs font-bold rounded">UNIQLO</span>` :
+                                item.brand === 'GU' ? `<span class="bg-gu text-gu-yellow px-2 py-0.5 text-xs font-bold rounded">GU</span>` :
+                                `<span class="bg-gray-700 text-white px-2 py-0.5 text-xs font-bold rounded">${item.brand}</span>`;
+
+                let sizesHtml = item.customSizes && item.customSizes.length > 0 ? 
+                    item.customSizes.map(s => `<span class="bg-white border rounded px-2 py-1 text-xs">${s.type}: <strong class="text-gray-800">${s.val} cm</strong></span>`).join('') :
+                    `<span class="text-gray-400 text-xs">未填寫細節尺寸</span>`;
 
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden";
                 card.innerHTML = `
-                    ${item.imgUrl ? `<img src="${item.imgUrl}" class="w-full h-52 object-cover bg-gray-100" alt="穿搭圖">` : ''}
+                    ${item.imgData ? `<div class="w-full bg-gray-50 flex justify-center"><img src="${item.imgData}" class="w-full h-auto max-h-[500px] object-contain" alt="穿搭圖"></div>` : ''}
                     <div class="p-3">
                         <div class="flex justify-between items-center mb-1">
                             ${brandBadge}
@@ -222,69 +347,157 @@
                         
                         <div class="bg-gray-50 p-2 rounded text-xs space-y-1 border border-gray-100">
                             <div class="font-bold text-gray-700 mb-1">尺寸公分數據：</div>
-                            <div class="flex flex-wrap gap-1.5">
-                                ${sizesHtml}
-                            </div>
+                            <div class="flex flex-wrap gap-1.5">${sizesHtml}</div>
                         </div>
 
-                        <button data-id="${id}" class="delete-btn mt-3 text-xs text-red-500 hover:underline w-full text-right">刪除這件單品</button>
+                        <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 text-xs">
+                            <button data-id="${id}" class="edit-btn text-blue-600 font-bold hover:underline">✏️ 編輯單品</button>
+                            <button data-id="${id}" class="delete-btn text-red-500 hover:underline">🗑️ 刪除</button>
+                        </div>
                     </div>
                 `;
                 listDiv.appendChild(card);
             });
 
-            // 綁定刪除事件
+            // 綁定編輯與刪除事件
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => openEditModal(e.target.getAttribute('data-id')));
+            });
+
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const id = e.target.getAttribute('data-id');
-                    if (confirm('確定要從雲端刪除這件衣服嗎？')) {
-                        remove(ref(db, `wardrobe/${id}`));
-                    }
+                    if (confirm('確定要刪除這件衣服嗎？')) remove(ref(db, `wardrobe/${id}`));
                 });
             });
-        });
+        }
 
-        // 表單送出至雲端
-        document.getElementById('itemForm').addEventListener('submit', (e) => {
-            e.preventDefault();
+        // 開啟編輯 Modal
+        function openEditModal(id) {
+            const item = allData[id];
+            if (!item) return;
 
-            // 取得品牌名稱
-            let finalBrand = brandSelect.value;
-            if (finalBrand === 'Other') {
-                finalBrand = customBrandInput.value.trim() || '其他品牌';
+            document.getElementById('editItemId').value = id;
+            document.getElementById('editName').value = item.name || '';
+            document.getElementById('editColor').value = item.color || '';
+            document.getElementById('editSize').value = item.size || '';
+            document.getElementById('editCategorySelect').value = item.category || categories[0];
+            document.getElementById('editImgUrl').value = '';
+
+            const editSizeContainer = document.getElementById('editSizeContainer');
+            editSizeContainer.innerHTML = '';
+            if (item.customSizes && item.customSizes.length > 0) {
+                item.customSizes.forEach(s => createSizeRow(editSizeContainer, s.type, s.val));
+            } else {
+                createSizeRow(editSizeContainer);
             }
 
-            // 收集動態尺寸數據
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        document.getElementById('closeEditModal').addEventListener('click', () => {
+            document.getElementById('editModal').classList.add('hidden');
+        });
+
+        // 圖片壓縮
+        function processImageFile(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width, height = img.height, maxSide = 800;
+                        if (width > height && width > maxSide) { height = (height * maxSide) / width; width = maxSide; }
+                        else if (height > maxSide) { width = (width * maxSide) / height; height = maxSide; }
+                        canvas.width = width; canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 監聽雲端資料
+        onValue(wardrobeRef, (snapshot) => {
+            allData = snapshot.val() || {};
+            renderList();
+        });
+
+        // 初始化
+        renderCategorySelects();
+        renderCategoryFilterBar();
+        createSizeRow(document.getElementById('sizeFieldsContainer'));
+
+        // 新增送出
+        document.getElementById('itemForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            let finalBrand = brandSelect.value === 'Other' ? (customBrandInput.value.trim() || '其他品牌') : brandSelect.value;
             const customSizes = [];
-            document.querySelectorAll('.size-row').forEach(row => {
+            document.querySelectorAll('#sizeFieldsContainer .size-row').forEach(row => {
                 const type = row.querySelector('.size-type').value;
                 const val = row.querySelector('.size-value').value;
-                if (val) {
-                    customSizes.push({ type, val });
-                }
+                if (val && type !== 'ADD_NEW') customSizes.push({ type, val });
             });
+
+            let imgData = document.getElementById('imgUrl').value;
+            const fileInput = document.getElementById('imageFileInput');
+            if (fileInput.files && fileInput.files[0]) {
+                imgData = await processImageFile(fileInput.files[0]);
+            }
 
             const newItem = {
                 brand: finalBrand,
                 name: document.getElementById('name').value,
                 color: document.getElementById('color').value,
-                category: document.getElementById('category').value,
+                category: document.getElementById('categorySelect').value,
                 size: document.getElementById('size').value,
                 customSizes: customSizes,
-                imgUrl: document.getElementById('imgUrl').value,
+                imgData: imgData,
                 createdAt: Date.now()
             };
 
-            // 推送到 Firebase
             push(wardrobeRef, newItem).then(() => {
                 e.target.reset();
-                // 重設尺寸輸入欄位
-                sizeFieldsContainer.innerHTML = '';
-                createSizeRow("衣長 / 總長");
+                document.getElementById('sizeFieldsContainer').innerHTML = '';
+                createSizeRow(document.getElementById('sizeFieldsContainer'));
                 customBrandInput.classList.add('hidden');
-            }).catch(error => {
-                alert('上傳失敗，請確認已在 Firebase 開啟 Realtime Database！');
-                console.error(error);
+                navInventoryBtn.click(); // 自動切回庫存頁
+            });
+        });
+
+        // 編輯送出
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editItemId').value;
+            const customSizes = [];
+            document.querySelectorAll('#editSizeContainer .size-row').forEach(row => {
+                const type = row.querySelector('.size-type').value;
+                const val = row.querySelector('.size-value').value;
+                if (val && type !== 'ADD_NEW') customSizes.push({ type, val });
+            });
+
+            let updatedData = {
+                name: document.getElementById('editName').value,
+                color: document.getElementById('editColor').value,
+                size: document.getElementById('editSize').value,
+                category: document.getElementById('editCategorySelect').value,
+                customSizes: customSizes
+            };
+
+            const editImgUrl = document.getElementById('editImgUrl').value;
+            const editFileInput = document.getElementById('editImageFileInput');
+            if (editFileInput.files && editFileInput.files[0]) {
+                updatedData.imgData = await processImageFile(editFileInput.files[0]);
+            } else if (editImgUrl) {
+                updatedData.imgData = editImgUrl;
+            }
+
+            update(ref(db, `wardrobe/${id}`), updatedData).then(() => {
+                document.getElementById('editModal').classList.add('hidden');
             });
         });
     </script>
