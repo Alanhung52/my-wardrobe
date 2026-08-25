@@ -13,19 +13,19 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-gray-100 font-sans text-gray-900 pb-24">
+<body class="bg-gray-100 font-sans text-gray-900 pb-28">
 
     <!-- Header -->
     <header class="bg-uq text-white p-4 text-center font-black text-xl tracking-widest shadow-md sticky top-0 z-40">
         MY WARDROBE
     </header>
 
-    <main class="max-w-md mx-auto p-4">
+    <main class="max-w-md mx-auto p-3">
         
         <!-- ================= 頁面 1：檢視庫存 ================= -->
-        <div id="tabInventory" class="space-y-4">
+        <div id="tabInventory" class="space-y-3">
             <!-- 搜尋與分類區 -->
-            <div class="bg-white rounded-lg shadow-sm p-3 border border-gray-200 space-y-3">
+            <div class="bg-white rounded-lg shadow-sm p-3 border border-gray-200 space-y-2">
                 <div class="relative">
                     <input type="text" id="searchInput" placeholder="搜尋品名、品牌或顏色..." class="w-full bg-gray-50 border border-gray-200 rounded-full py-2 px-4 text-xs focus:ring-2 focus:ring-red-500 outline-none">
                 </div>
@@ -35,9 +35,9 @@
                 </div>
             </div>
 
-            <!-- 衣物卡片列表區 -->
-            <div id="wardrobeList" class="space-y-4">
-                <div class="text-center py-8 text-gray-400 text-sm">雲端資料載入中...</div>
+            <!-- 衣物卡片列表區 (UNIQLO App 雙欄排版) -->
+            <div id="wardrobeList" class="grid grid-cols-2 gap-2.5">
+                <div class="col-span-2 text-center py-8 text-gray-400 text-sm">雲端資料載入中...</div>
             </div>
         </div>
 
@@ -106,13 +106,13 @@
 
     </main>
 
-    <!-- 極簡風底部 Tab 導覽列 -->
-    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around py-3 z-50 max-w-md mx-auto">
-        <button id="navInventoryBtn" class="flex-1 text-center text-red-600 font-bold text-sm tracking-wider">
+    <!-- 加大尺寸底部 Tab 導覽列 -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center z-50 max-w-md mx-auto shadow-lg">
+        <button id="navInventoryBtn" class="flex-1 py-4 text-center text-red-600 font-black text-base tracking-widest active:bg-gray-50 transition">
             檢視庫存
         </button>
-        <div class="w-px bg-gray-200 my-1"></div>
-        <button id="navAddBtn" class="flex-1 text-center text-gray-500 font-bold text-sm tracking-wider">
+        <div class="w-px bg-gray-200 h-8"></div>
+        <button id="navAddBtn" class="flex-1 py-4 text-center text-gray-500 font-bold text-base tracking-widest active:bg-gray-50 transition">
             + 新增單品
         </button>
     </nav>
@@ -197,15 +197,15 @@
         navInventoryBtn.addEventListener('click', () => {
             tabInventory.classList.remove('hidden');
             tabAdd.classList.add('hidden');
-            navInventoryBtn.className = "flex-1 text-center text-red-600 font-bold text-sm tracking-wider";
-            navAddBtn.className = "flex-1 text-center text-gray-500 font-bold text-sm tracking-wider";
+            navInventoryBtn.className = "flex-1 py-4 text-center text-red-600 font-black text-base tracking-widest active:bg-gray-50 transition";
+            navAddBtn.className = "flex-1 py-4 text-center text-gray-500 font-bold text-base tracking-widest active:bg-gray-50 transition";
         });
 
         navAddBtn.addEventListener('click', () => {
             tabAdd.classList.remove('hidden');
             tabInventory.classList.add('hidden');
-            navAddBtn.className = "flex-1 text-center text-red-600 font-bold text-sm tracking-wider";
-            navInventoryBtn.className = "flex-1 text-center text-gray-500 font-bold text-sm tracking-wider";
+            navAddBtn.className = "flex-1 py-4 text-center text-red-600 font-black text-base tracking-widest active:bg-gray-50 transition";
+            navInventoryBtn.className = "flex-1 py-4 text-center text-gray-500 font-bold text-base tracking-widest active:bg-gray-50 transition";
         });
 
         // 類別選單渲染
@@ -235,10 +235,10 @@
 
         function renderCategoryFilterBar() {
             const bar = document.getElementById('categoryFilterBar');
-            let html = `<button data-cat="ALL" class="cat-filter-btn px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${currentCategoryFilter === 'ALL' ? 'bg-uq text-white' : 'bg-gray-100 text-gray-600'} shadow-sm">全部單品</button>`;
+            let html = `<button data-cat="ALL" class="cat-filter-btn px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${currentCategoryFilter === 'ALL' ? 'bg-uq text-white' : 'bg-gray-100 text-gray-600'} shadow-sm">全部單品</button>`;
             categories.forEach(c => {
                 const active = currentCategoryFilter === c;
-                html += `<button data-cat="${c}" class="cat-filter-btn px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${active ? 'bg-uq text-white' : 'bg-gray-100 text-gray-600'} shadow-sm">${c}</button>`;
+                html += `<button data-cat="${c}" class="cat-filter-btn px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap ${active ? 'bg-uq text-white' : 'bg-gray-100 text-gray-600'} shadow-sm">${c}</button>`;
             });
             bar.innerHTML = html;
             document.querySelectorAll('.cat-filter-btn').forEach(btn => {
@@ -299,13 +299,13 @@
             renderList();
         });
 
-        // 渲染列表 (已移除圖片與功能按鈕的 Emoji)
+        // 渲染列表 (UNIQLO App 一列兩件雙欄排版)
         function renderList() {
             const listDiv = document.getElementById('wardrobeList');
             listDiv.innerHTML = '';
 
             if (!allData || Object.keys(allData).length === 0) {
-                listDiv.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">目前衣櫥是空的，請新增單品！</div>`;
+                listDiv.innerHTML = `<div class="col-span-2 text-center py-8 text-gray-400 text-sm">目前衣櫥是空的，請新增單品！</div>`;
                 return;
             }
 
@@ -320,41 +320,53 @@
             });
 
             if (filteredKeys.length === 0) {
-                listDiv.innerHTML = `<div class="text-center py-8 text-gray-400 text-sm">找不到符合條件的單品</div>`;
+                listDiv.innerHTML = `<div class="col-span-2 text-center py-8 text-gray-400 text-sm">找不到符合條件的單品</div>`;
                 return;
             }
 
             filteredKeys.forEach((id) => {
                 const item = allData[id];
-                let brandBadge = item.brand === 'UNIQLO' ? `<span class="bg-uq text-white px-2 py-0.5 text-xs font-bold rounded">UNIQLO</span>` :
-                                item.brand === 'GU' ? `<span class="bg-gu text-gu-yellow px-2 py-0.5 text-xs font-bold rounded">GU</span>` :
-                                `<span class="bg-gray-700 text-white px-2 py-0.5 text-xs font-bold rounded">${item.brand}</span>`;
+                let brandBadge = item.brand === 'UNIQLO' ? `<span class="bg-uq text-white px-1.5 py-0.5 text-[10px] font-bold rounded">UNIQLO</span>` :
+                                item.brand === 'GU' ? `<span class="bg-gu text-gu-yellow px-1.5 py-0.5 text-[10px] font-bold rounded">GU</span>` :
+                                `<span class="bg-gray-700 text-white px-1.5 py-0.5 text-[10px] font-bold rounded">${item.brand}</span>`;
 
                 let sizesHtml = item.customSizes && item.customSizes.length > 0 ? 
-                    item.customSizes.map(s => `<span class="bg-white border rounded px-2 py-1 text-xs">${s.type}: <strong class="text-gray-800">${s.val} cm</strong></span>`).join('') :
-                    `<span class="text-gray-400 text-xs">未填寫細節尺寸</span>`;
+                    item.customSizes.map(s => `<span class="bg-gray-100 text-gray-700 px-1 py-0.5 text-[10px] rounded">${s.type}:${s.val}cm</span>`).join('') :
+                    `<span class="text-gray-400 text-[10px]">無尺寸細節</span>`;
 
                 const card = document.createElement('div');
-                card.className = "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden";
+                card.className = "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col justify-between";
                 card.innerHTML = `
-                    ${item.imgData ? `<div class="w-full bg-gray-50 flex justify-center"><img src="${item.imgData}" class="w-full h-auto max-h-[500px] object-contain" alt="穿搭圖"></div>` : ''}
-                    <div class="p-3">
-                        <div class="flex justify-between items-center mb-1">
-                            ${brandBadge}
-                            <span class="text-xs text-gray-500 font-bold">${item.category} (${item.size || 'F'})</span>
+                    <div>
+                        <!-- 圖片區塊 (高質感比例) -->
+                        <div class="w-full bg-gray-100 aspect-[3/4] relative overflow-hidden flex items-center justify-center">
+                            ${item.imgData ? 
+                                `<img src="${item.imgData}" class="w-full h-full object-cover" alt="${item.name}">` : 
+                                `<span class="text-gray-300 text-xs">無照片</span>`
+                            }
                         </div>
-                        <h3 class="font-bold text-sm text-gray-800 mb-1">${item.name}</h3>
-                        ${item.color ? `<div class="text-xs text-gray-500 mb-2">顏色：${item.color}</div>` : ''}
                         
-                        <div class="bg-gray-50 p-2 rounded text-xs space-y-1 border border-gray-100">
-                            <div class="font-bold text-gray-700 mb-1">尺寸公分數據：</div>
-                            <div class="flex flex-wrap gap-1.5">${sizesHtml}</div>
+                        <!-- 內文資訊區 -->
+                        <div class="p-2 space-y-1">
+                            <div class="flex justify-between items-center">
+                                ${brandBadge}
+                                <span class="text-[10px] text-gray-500 font-bold">${item.category} (${item.size || 'F'})</span>
+                            </div>
+                            
+                            <h3 class="font-bold text-xs text-gray-900 line-clamp-2 leading-snug" title="${item.name}">${item.name}</h3>
+                            ${item.color ? `<div class="text-[10px] text-gray-500">顏色：${item.color}</div>` : ''}
+                            
+                            <!-- 尺寸標籤 -->
+                            <div class="flex flex-wrap gap-1 pt-1">
+                                ${sizesHtml}
+                            </div>
                         </div>
+                    </div>
 
-                        <div class="flex justify-between items-center mt-3 pt-2 border-t border-gray-100 text-xs">
-                            <button data-id="${id}" class="edit-btn text-gray-600 font-bold hover:text-black hover:underline">編輯單品</button>
-                            <button data-id="${id}" class="delete-btn text-red-500 hover:underline">刪除</button>
-                        </div>
+                    <!-- 操作按鈕 -->
+                    <div class="p-2 pt-0 flex justify-between items-center text-[11px] border-t border-gray-50 mt-1">
+                        <button data-id="${id}" class="edit-btn text-gray-500 hover:text-black font-bold">編輯</button>
+                        <button data-id="${id}" class="delete-btn text-red-500 hover:underline">刪除</button>
                     </div>
                 `;
                 listDiv.appendChild(card);
