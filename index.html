@@ -81,6 +81,15 @@
                         </div>
                     </div>
 
+                    <!-- AI 自動辨識區塊 -->
+                    <div class="bg-red-50 p-3 rounded border border-red-200 space-y-2">
+                        <label class="block text-xs font-bold text-red-700">AI 上傳尺寸圖自動辨識</label>
+                        <input type="file" id="sizeChartInput" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-red-600 file:text-white hover:file:bg-red-700">
+                        <button type="button" id="aiScanBtn" class="w-full bg-black text-white font-bold py-1.5 rounded text-xs hover:bg-gray-800 transition">
+                            AI 自動辨識尺寸
+                        </button>
+                    </div>
+
                     <div class="bg-gray-50 p-3 rounded border border-gray-200">
                         <div class="flex justify-between items-center mb-2">
                             <span class="text-xs font-bold text-gray-700">精確尺寸紀錄 (cm)</span>
@@ -161,10 +170,14 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK & Google GenAI -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+
+        const GEMINI_API_KEY = "AQ.Ab8RN6JSoDEG1FKvlJAtDSmdLEfjdyytHHNS7gTsqeC2HVZeKQ";
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
         const firebaseConfig = {
             apiKey: "AIzaSyBwF163OMp-1sPCV9xHsORYemEy97YPCkI",
@@ -292,6 +305,63 @@
         });
         document.getElementById('addEditSizeBtn').addEventListener('click', () => {
             createSizeRow(document.getElementById('editSizeContainer'));
+        });
+
+        // AI 辨識圖片轉 Base64 處理
+        function fileToGenerativePart(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve({
+                    inlineData: { data: reader.result.split(',')[1], mimeType: file.type }
+                });
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // AI 自動辨識邏輯
+        document.getElementById('aiScanBtn').addEventListener('click', async () => {
+            const sizeChartInput = document.getElementById('sizeChartInput');
+            if (!sizeChartInput.files || !sizeChartInput.files[0]) {
+                alert('請先選擇一張尺寸圖片！');
+                return;
+            }
+
+            const scanBtn = document.getElementById('aiScanBtn');
+            scanBtn.innerText = "AI 辨識中，請稍候...";
+            scanBtn.disabled = true;
+
+            try {
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                const imagePart = await fileToGenerativePart(sizeChartInput.files[0]);
+
+                const prompt = `這是一張服飾尺寸數據圖。請協助讀取圖中的尺寸部位與對應的數值（單位：公分 cm）。
+請嚴格輸出 JSON 格式的陣列，格式如下（不加任何 markdown 標記）：
+[
+  {"type": "衣長 / 總長", "val": 70},
+  {"type": "肩寬", "val": 50}
+]
+部位名稱請儘量對應常見的：衣長 / 總長、肩寬、胸寬、連肩袖長、腰圍、臀圍、股上 (褲檔)、股下 (褲長)、腿圍。`;
+
+                const result = await model.generateContent([prompt, imagePart]);
+                const responseText = result.response.text().trim().replace(/```json/g, '').replace(/```/g, '').trim();
+                const parsedSizes = JSON.parse(responseText);
+
+                const container = document.getElementById('sizeFieldsContainer');
+                container.innerHTML = ''; // 清空原本的
+
+                parsedSizes.forEach(item => {
+                    if (!sizeOptions.includes(item.type)) sizeOptions.push(item.type);
+                    createSizeRow(container, item.type, item.val);
+                });
+
+                alert('AI 尺寸數據帶入成功！');
+            } catch (err) {
+                console.error(err);
+                alert('辨識失敗，請確認圖片清晰度或重新嘗試。');
+            } finally {
+                scanBtn.innerText = "AI 自動辨識尺寸";
+                scanBtn.disabled = false;
+            }
         });
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
