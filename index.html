@@ -170,14 +170,12 @@
         </div>
     </div>
 
-    <!-- Firebase SDK & Google GenAI -->
+    <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
         const GEMINI_API_KEY = "AQ.Ab8RN6JSoDEG1FKvlJAtDSmdLEfjdyytHHNS7gTsqeC2HVZeKQ";
-        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
         const firebaseConfig = {
             apiKey: "AIzaSyBwF163OMp-1sPCV9xHsORYemEy97YPCkI",
@@ -275,6 +273,9 @@
         function createSizeRow(container, defaultType = sizeOptions[0], defaultValue = "") {
             const row = document.createElement('div');
             row.className = "flex items-center space-x-2 size-row";
+            if (!sizeOptions.includes(defaultType)) {
+                sizeOptions.push(defaultType);
+            }
             let optionsHtml = sizeOptions.map(opt => `<option value="${opt}" ${opt === defaultType ? 'selected' : ''}>${opt}</option>`).join('') + `<option value="ADD_NEW">+ 自訂部位...</option>`;
             
             row.innerHTML = `
@@ -290,6 +291,7 @@
                         const trimmed = newType.trim();
                         if (!sizeOptions.includes(trimmed)) sizeOptions.push(trimmed);
                         e.target.innerHTML = sizeOptions.map(opt => `<option value="${opt}" ${opt === trimmed ? 'selected' : ''}>${opt}</option>`).join('') + `<option value="ADD_NEW">+ 自訂部位...</option>`;
+                        e.target.value = trimmed;
                     } else {
                         e.target.value = sizeOptions[0];
                     }
@@ -307,18 +309,17 @@
             createSizeRow(document.getElementById('editSizeContainer'));
         });
 
-        // AI 辨識圖片轉 Base64 處理
-        function fileToGenerativePart(file) {
-            return new Promise((resolve) => {
+        // 圖片轉 Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
-                reader.onloadend = () => resolve({
-                    inlineData: { data: reader.result.split(',')[1], mimeType: file.type }
-                });
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
                 reader.readAsDataURL(file);
             });
         }
 
-        // AI 自動辨識邏輯
+        // 使用原生 fetch 呼叫 Gemini REST API
         document.getElementById('aiScanBtn').addEventListener('click', async () => {
             const sizeChartInput = document.getElementById('sizeChartInput');
             if (!sizeChartInput.files || !sizeChartInput.files[0]) {
@@ -331,33 +332,58 @@
             scanBtn.disabled = true;
 
             try {
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-                const imagePart = await fileToGenerativePart(sizeChartInput.files[0]);
+                const file = sizeChartInput.files[0];
+                const base64Data = await fileToBase64(file);
 
-                const prompt = `這是一張服飾尺寸數據圖。請協助讀取圖中的尺寸部位與對應的數值（單位：公分 cm）。
-請嚴格輸出 JSON 格式的陣列，格式如下（不加任何 markdown 標記）：
+                const promptText = `這是一張服飾尺寸數據圖片。請讀取圖中所有部位與對應的數字（公分 cm）。
+請辨識出每個部位名稱（如：衣長、肩寬、胸寬、袖長、下擺寬、大腿圍...等，任何圖中出現的部位都可以）與其數值。
+請嚴格僅輸出純 JSON 陣列，絕對不要包含任何 Markdown 格式（如 \`\`\`json 或 \`\`\`）或其他文字說明。
+格式範例如下：
 [
-  {"type": "衣長 / 總長", "val": 70},
-  {"type": "肩寬", "val": 50}
-]
-部位名稱請儘量對應常見的：衣長 / 總長、肩寬、胸寬、連肩袖長、腰圍、臀圍、股上 (褲檔)、股下 (褲長)、腿圍。`;
+  {"type": "肩寬", "val": 48},
+  {"type": "胸寬", "val": 56.5}
+]`;
 
-                const result = await model.generateContent([prompt, imagePart]);
-                const responseText = result.response.text().trim().replace(/```json/g, '').replace(/```/g, '').trim();
-                const parsedSizes = JSON.parse(responseText);
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: promptText },
+                                { inline_data: { mime_type: file.type, data: base64Data } }
+                            ]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error?.message || 'API 呼叫失敗');
+                }
+
+                const resData = await response.json();
+                let text = resData.candidates[0].content.parts[0].text.trim();
+                text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+
+                const parsedSizes = JSON.parse(text);
 
                 const container = document.getElementById('sizeFieldsContainer');
-                container.innerHTML = ''; // 清空原本的
+                container.innerHTML = '';
 
                 parsedSizes.forEach(item => {
-                    if (!sizeOptions.includes(item.type)) sizeOptions.push(item.type);
-                    createSizeRow(container, item.type, item.val);
+                    const valNum = parseFloat(item.val);
+                    if (!isNaN(valNum)) {
+                        createSizeRow(container, item.type, valNum);
+                    }
                 });
 
                 alert('AI 尺寸數據帶入成功！');
             } catch (err) {
                 console.error(err);
-                alert('辨識失敗，請確認圖片清晰度或重新嘗試。');
+                alert('辨識失敗：' + err.message);
             } finally {
                 scanBtn.innerText = "AI 自動辨識尺寸";
                 scanBtn.disabled = false;
@@ -369,7 +395,7 @@
             renderList();
         });
 
-        // 渲染列表 (UNIQLO App 一列兩件雙欄排版)
+        // 渲染列表 (UNIQLO App 雙欄排版)
         function renderList() {
             const listDiv = document.getElementById('wardrobeList');
             listDiv.innerHTML = '';
@@ -408,7 +434,6 @@
                 card.className = "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col justify-between";
                 card.innerHTML = `
                     <div>
-                        <!-- 圖片區塊 (高質感比例) -->
                         <div class="w-full bg-gray-100 aspect-[3/4] relative overflow-hidden flex items-center justify-center">
                             ${item.imgData ? 
                                 `<img src="${item.imgData}" class="w-full h-full object-cover" alt="${item.name}">` : 
@@ -416,7 +441,6 @@
                             }
                         </div>
                         
-                        <!-- 內文資訊區 -->
                         <div class="p-2 space-y-1">
                             <div class="flex justify-between items-center">
                                 ${brandBadge}
@@ -426,14 +450,12 @@
                             <h3 class="font-bold text-xs text-gray-900 line-clamp-2 leading-snug" title="${item.name}">${item.name}</h3>
                             ${item.color ? `<div class="text-[10px] text-gray-500">顏色：${item.color}</div>` : ''}
                             
-                            <!-- 尺寸標籤 -->
                             <div class="flex flex-wrap gap-1 pt-1">
                                 ${sizesHtml}
                             </div>
                         </div>
                     </div>
 
-                    <!-- 操作按鈕 -->
                     <div class="p-2 pt-0 flex justify-between items-center text-[11px] border-t border-gray-50 mt-1">
                         <button data-id="${id}" class="edit-btn text-gray-500 hover:text-black font-bold">編輯</button>
                         <button data-id="${id}" class="delete-btn text-red-500 hover:underline">刪除</button>
