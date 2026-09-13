@@ -35,7 +35,7 @@
                 </div>
             </div>
 
-            <!-- 衣物卡片列表區 (UNIQLO App 雙欄排版) -->
+            <!-- 衣物卡片列表區 (雙欄排版) -->
             <div id="wardrobeList" class="grid grid-cols-2 gap-2.5">
                 <div class="col-span-2 text-center py-8 text-gray-400 text-sm">雲端資料載入中...</div>
             </div>
@@ -92,9 +92,12 @@
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">衣服照片 (上傳圖片 或 貼上網址)</label>
-                        <input type="file" id="imageFileInput" accept="image/*" class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 mb-2">
-                        <input type="url" id="imgUrl" placeholder="或貼上 StylingBook 官網圖片網址" class="w-full border rounded p-2 text-sm">
+                        <label class="block text-xs font-bold text-gray-600 mb-1">衣服照片 (可上傳多張圖片 或 貼上多個網址)</label>
+                        <input type="file" id="imageFileInput" accept="image/*" multiple class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 mb-2">
+                        <div id="urlContainer" class="space-y-2">
+                            <input type="url" class="img-url-input w-full border rounded p-2 text-sm" placeholder="貼上圖片網址">
+                        </div>
+                        <button type="button" id="addUrlBtn" class="text-xs text-red-600 font-bold hover:underline mt-1">+ 增加網址</button>
                     </div>
 
                     <button type="submit" id="submitBtn" class="w-full bg-uq text-white font-bold py-2.5 rounded hover:opacity-90 transition text-sm shadow">
@@ -152,9 +155,13 @@
                     <div id="editSizeContainer" class="space-y-1.5"></div>
                 </div>
                 <div>
-                    <label class="font-bold text-gray-600">更新圖片 (選填)</label>
-                    <input type="file" id="editImageFileInput" accept="image/*" class="w-full mt-1">
-                    <input type="url" id="editImgUrl" placeholder="或貼上圖片網址" class="w-full border rounded p-1.5 mt-1">
+                    <label class="font-bold text-gray-600">新增/替換照片 (可多選)</label>
+                    <input type="file" id="editImageFileInput" accept="image/*" multiple class="w-full mt-1">
+                    <div id="editUrlContainer" class="space-y-1 mt-1">
+                        <input type="url" class="edit-img-url-input w-full border rounded p-1.5" placeholder="貼上新圖片網址">
+                    </div>
+                    <button type="button" id="addEditUrlBtn" class="text-xs text-red-600 font-bold hover:underline mt-1">+ 增加網址</button>
+                    <div id="existingImagesContainer" class="mt-2 flex flex-wrap gap-1"></div>
                 </div>
                 <button type="submit" class="w-full bg-uq text-white font-bold py-2 rounded text-sm shadow">更新資料</button>
             </form>
@@ -187,6 +194,7 @@
         let allData = {};
         let currentCategoryFilter = "ALL";
         let currentSearchQuery = "";
+        let currentEditImages = [];
 
         // Tab 切換邏輯
         const tabInventory = document.getElementById('tabInventory');
@@ -206,6 +214,25 @@
             tabInventory.classList.add('hidden');
             navAddBtn.className = "flex-1 py-4 text-center text-red-600 font-black text-base tracking-widest active:bg-gray-50 transition";
             navInventoryBtn.className = "flex-1 py-4 text-center text-gray-500 font-bold text-base tracking-widest active:bg-gray-50 transition";
+        });
+
+        // 多網址新增邏輯
+        document.getElementById('addUrlBtn').addEventListener('click', () => {
+            const container = document.getElementById('urlContainer');
+            const input = document.createElement('input');
+            input.type = 'url';
+            input.className = 'img-url-input w-full border rounded p-2 text-sm';
+            input.placeholder = '貼上圖片網址';
+            container.appendChild(input);
+        });
+
+        document.getElementById('addEditUrlBtn').addEventListener('click', () => {
+            const container = document.getElementById('editUrlContainer');
+            const input = document.createElement('input');
+            input.type = 'url';
+            input.className = 'edit-img-url-input w-full border rounded p-1.5';
+            input.placeholder = '貼上新圖片網址';
+            container.appendChild(input);
         });
 
         // 類別選單渲染
@@ -299,7 +326,7 @@
             renderList();
         });
 
-        // 渲染列表 (UNIQLO App 一列兩件雙欄排版)
+        // 渲染列表 (多圖輪播支援)
         function renderList() {
             const listDiv = document.getElementById('wardrobeList');
             listDiv.innerHTML = '';
@@ -334,36 +361,50 @@
                     item.customSizes.map(s => `<span class="bg-gray-100 text-gray-700 px-1 py-0.5 text-[10px] rounded">${s.type}:${s.val}cm</span>`).join('') :
                     `<span class="text-gray-400 text-[10px]">無尺寸細節</span>`;
 
+                // 處理多圖片陣列相容性
+                let images = [];
+                if (item.images && Array.isArray(item.images) && item.images.length > 0) {
+                    images = item.images;
+                } else if (item.imgData) {
+                    images = [item.imgData];
+                }
+
+                // 生成圖片輪播 HTML
+                let carouselHtml = '';
+                if (images.length > 0) {
+                    carouselHtml = `
+                        <div class="w-full bg-gray-100 aspect-[3/4] relative overflow-hidden group">
+                            <div class="carousel-track flex w-full h-full overflow-x-auto snap-x snap-mandatory no-scrollbar" onscroll="updateDots(this)">
+                                ${images.map(img => `<img src="${img}" class="w-full h-full object-cover flex-shrink-0 snap-start" alt="${item.name}">`).join('')}
+                            </div>
+                            ${images.length > 1 ? `
+                                <div class="carousel-dots absolute bottom-1.5 left-0 right-0 flex justify-center space-x-1 pointer-events-none">
+                                    ${images.map((_, idx) => `<div class="dot w-1.5 h-1.5 rounded-full ${idx === 0 ? 'bg-white' : 'bg-white/50'} shadow-sm"></div>`).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    carouselHtml = `<div class="w-full bg-gray-100 aspect-[3/4] flex items-center justify-center text-gray-300 text-xs">無照片</div>`;
+                }
+
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col justify-between";
                 card.innerHTML = `
                     <div>
-                        <!-- 圖片區塊 (高質感比例) -->
-                        <div class="w-full bg-gray-100 aspect-[3/4] relative overflow-hidden flex items-center justify-center">
-                            ${item.imgData ? 
-                                `<img src="${item.imgData}" class="w-full h-full object-cover" alt="${item.name}">` : 
-                                `<span class="text-gray-300 text-xs">無照片</span>`
-                            }
-                        </div>
-                        
-                        <!-- 內文資訊區 -->
+                        ${carouselHtml}
                         <div class="p-2 space-y-1">
                             <div class="flex justify-between items-center">
                                 ${brandBadge}
                                 <span class="text-[10px] text-gray-500 font-bold">${item.category} (${item.size || 'F'})</span>
                             </div>
-                            
                             <h3 class="font-bold text-xs text-gray-900 line-clamp-2 leading-snug" title="${item.name}">${item.name}</h3>
                             ${item.color ? `<div class="text-[10px] text-gray-500">顏色：${item.color}</div>` : ''}
-                            
-                            <!-- 尺寸標籤 -->
                             <div class="flex flex-wrap gap-1 pt-1">
                                 ${sizesHtml}
                             </div>
                         </div>
                     </div>
-
-                    <!-- 操作按鈕 -->
                     <div class="p-2 pt-0 flex justify-between items-center text-[11px] border-t border-gray-50 mt-1">
                         <button data-id="${id}" class="edit-btn text-gray-500 hover:text-black font-bold">編輯</button>
                         <button data-id="${id}" class="delete-btn text-red-500 hover:underline">刪除</button>
@@ -384,6 +425,19 @@
             });
         }
 
+        // 輪播點點指示器即時更新
+        window.updateDots = function(el) {
+            const index = Math.round(el.scrollLeft / el.clientWidth);
+            const dots = el.parentElement.querySelectorAll('.dot');
+            dots.forEach((dot, idx) => {
+                if (idx === index) {
+                    dot.className = "dot w-1.5 h-1.5 rounded-full bg-white shadow-sm";
+                } else {
+                    dot.className = "dot w-1.5 h-1.5 rounded-full bg-white/50 shadow-sm";
+                }
+            });
+        }
+
         // 開啟編輯 Modal
         function openEditModal(id) {
             const item = allData[id];
@@ -394,7 +448,9 @@
             document.getElementById('editColor').value = item.color || '';
             document.getElementById('editSize').value = item.size || '';
             document.getElementById('editCategorySelect').value = item.category || categories[0];
-            document.getElementById('editImgUrl').value = '';
+
+            currentEditImages = item.images && item.images.length > 0 ? [...item.images] : (item.imgData ? [item.imgData] : []);
+            renderExistingImages();
 
             const editSizeContainer = document.getElementById('editSizeContainer');
             editSizeContainer.innerHTML = '';
@@ -406,6 +462,25 @@
 
             document.getElementById('editModal').classList.remove('hidden');
         }
+
+        function renderExistingImages() {
+            const container = document.getElementById('existingImagesContainer');
+            container.innerHTML = '';
+            currentEditImages.forEach((img, index) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = "relative w-12 h-12 border rounded overflow-hidden";
+                wrapper.innerHTML = `
+                    <img src="${img}" class="w-full h-full object-cover">
+                    <button type="button" class="absolute top-0 right-0 bg-red-600 text-white w-4 h-4 text-[10px] flex items-center justify-center font-bold" onclick="removeEditImage(${index})">✕</button>
+                `;
+                container.appendChild(wrapper);
+            });
+        }
+
+        window.removeEditImage = function(index) {
+            currentEditImages.splice(index, 1);
+            renderExistingImages();
+        };
 
         document.getElementById('closeEditModal').addEventListener('click', () => {
             document.getElementById('editModal').classList.add('hidden');
@@ -444,7 +519,7 @@
         renderCategoryFilterBar();
         createSizeRow(document.getElementById('sizeFieldsContainer'));
 
-        // 新增送出
+        // 新增送出 (處理多圖)
         document.getElementById('itemForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             let finalBrand = brandSelect.value === 'Other' ? (customBrandInput.value.trim() || '其他品牌') : brandSelect.value;
@@ -455,10 +530,19 @@
                 if (val && type !== 'ADD_NEW') customSizes.push({ type, val });
             });
 
-            let imgData = document.getElementById('imgUrl').value;
+            // 收集多圖 (檔案 + 網址)
+            let imageList = [];
+            const urlInputs = document.querySelectorAll('.img-url-input');
+            urlInputs.forEach(input => {
+                if (input.value.trim()) imageList.push(input.value.trim());
+            });
+
             const fileInput = document.getElementById('imageFileInput');
-            if (fileInput.files && fileInput.files[0]) {
-                imgData = await processImageFile(fileInput.files[0]);
+            if (fileInput.files && fileInput.files.length > 0) {
+                for (let file of fileInput.files) {
+                    const compressed = await processImageFile(file);
+                    imageList.push(compressed);
+                }
             }
 
             const newItem = {
@@ -468,20 +552,21 @@
                 category: document.getElementById('categorySelect').value,
                 size: document.getElementById('size').value,
                 customSizes: customSizes,
-                imgData: imgData,
+                images: imageList,
                 createdAt: Date.now()
             };
 
             push(wardrobeRef, newItem).then(() => {
                 e.target.reset();
                 document.getElementById('sizeFieldsContainer').innerHTML = '';
+                document.getElementById('urlContainer').innerHTML = '<input type="url" class="img-url-input w-full border rounded p-2 text-sm" placeholder="貼上圖片網址">';
                 createSizeRow(document.getElementById('sizeFieldsContainer'));
                 customBrandInput.classList.add('hidden');
                 navInventoryBtn.click();
             });
         });
 
-        // 編輯送出
+        // 編輯送出 (處理多圖)
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('editItemId').value;
@@ -492,21 +577,29 @@
                 if (val && type !== 'ADD_NEW') customSizes.push({ type, val });
             });
 
+            let finalImages = [...currentEditImages];
+
+            const editUrlInputs = document.querySelectorAll('.edit-img-url-input');
+            editUrlInputs.forEach(input => {
+                if (input.value.trim()) finalImages.push(input.value.trim());
+            });
+
+            const editFileInput = document.getElementById('editImageFileInput');
+            if (editFileInput.files && editFileInput.files.length > 0) {
+                for (let file of editFileInput.files) {
+                    const compressed = await processImageFile(file);
+                    finalImages.push(compressed);
+                }
+            }
+
             let updatedData = {
                 name: document.getElementById('editName').value,
                 color: document.getElementById('editColor').value,
                 size: document.getElementById('editSize').value,
                 category: document.getElementById('editCategorySelect').value,
-                customSizes: customSizes
+                customSizes: customSizes,
+                images: finalImages
             };
-
-            const editImgUrl = document.getElementById('editImgUrl').value;
-            const editFileInput = document.getElementById('editImageFileInput');
-            if (editFileInput.files && editFileInput.files[0]) {
-                updatedData.imgData = await processImageFile(editFileInput.files[0]);
-            } else if (editImgUrl) {
-                updatedData.imgData = editImgUrl;
-            }
 
             update(ref(db, `wardrobe/${id}`), updatedData).then(() => {
                 document.getElementById('editModal').classList.add('hidden');
