@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Wardrobe</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入拖曳排序庫 SortableJS -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         .bg-uq { background-color: #E60012; }
@@ -13,7 +12,7 @@
         .text-gu-yellow { color: #FFDD00; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .sortable-ghost { opacity: 0.4; border: 2px dashed #E60012; }
+        .sortable-ghost { opacity: 0.3; border: 2px dashed #E60012; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-900 pb-28">
@@ -40,77 +39,101 @@
             </div>
         </div>
 
-        <!-- ================= 頁面 2：新增單品 ================= -->
-        <div id="tabAdd" class="hidden">
-            <div class="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
-                <h2 class="font-bold text-base mb-3 border-b-2 border-red-600 pb-1">新增單品 / 尺寸資料</h2>
+        <!-- ================= 頁面 2：新增單品 (重構優化) ================= -->
+        <div id="tabAdd" class="hidden space-y-3">
+            <form id="itemForm" class="space-y-3">
                 
-                <form id="itemForm" class="space-y-3">
+                <!-- 區塊 1：基本資訊 -->
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 space-y-3">
+                    <h3 class="font-bold text-sm text-gray-800 border-b pb-2 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-uq"></span> 基本單品資訊
+                    </h3>
+                    
                     <div>
                         <label class="block text-xs font-bold text-gray-600 mb-1">品牌</label>
-                        <select id="brandSelect" class="w-full border rounded p-2 text-sm focus:ring-2 focus:ring-red-500 outline-none">
+                        <select id="brandSelect" class="w-full border rounded-lg p-2 text-xs bg-gray-50 focus:bg-white focus:ring-2 focus:ring-red-500 outline-none transition">
                             <option value="UNIQLO">UNIQLO</option>
                             <option value="GU">GU</option>
                             <option value="Other">其他品牌</option>
                         </select>
-                        <input type="text" id="customBrand" placeholder="請輸入品牌名稱" class="w-full border rounded p-2 text-sm mt-2 hidden">
+                        <input type="text" id="customBrand" placeholder="請輸入品牌名稱" class="w-full border rounded-lg p-2 text-xs mt-2 hidden bg-gray-50 focus:bg-white outline-none">
                     </div>
 
                     <div class="grid grid-cols-3 gap-2">
                         <div class="col-span-2">
-                            <label class="block text-xs font-bold text-gray-600 mb-1">品名 / 貨號</label>
-                            <input type="text" id="name" placeholder="例：寬版圓領 T 恤 (#465185)" class="w-full border rounded p-2 text-sm" required>
+                            <label class="block text-xs font-bold text-gray-600 mb-1">品名 / 貨號 <span class="text-red-500">*</span></label>
+                            <input type="text" id="name" placeholder="例：寬版圓領 T 恤 (#465185)" class="w-full border rounded-lg p-2 text-xs bg-gray-50 focus:bg-white focus:ring-2 focus:ring-red-500 outline-none" required>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-600 mb-1">顏色</label>
-                            <input type="text" id="color" placeholder="例：黑色 / 09" class="w-full border rounded p-2 text-sm">
+                            <input type="text" id="color" placeholder="例：黑色 / 09" class="w-full border rounded-lg p-2 text-xs bg-gray-50 focus:bg-white outline-none">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs font-bold text-gray-600 mb-1">類別</label>
-                            <select id="categorySelect" class="w-full border rounded p-2 text-sm"></select>
+                            <select id="categorySelect" class="w-full border rounded-lg p-2 text-xs bg-gray-50 focus:bg-white outline-none"></select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-600 mb-1">標籤尺寸</label>
-                            <input type="text" id="size" placeholder="例：L / M / 30" class="w-full border rounded p-2 text-sm">
+                            <input type="text" id="size" placeholder="例：L / M / 30" class="w-full border rounded-lg p-2 text-xs bg-gray-50 focus:bg-white outline-none">
                         </div>
                     </div>
+                </div>
 
-                    <div class="bg-gray-50 p-3 rounded border border-gray-200">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold text-gray-700">精確尺寸紀錄 (cm)</span>
-                            <button type="button" id="addSizeBtn" class="text-xs text-red-600 font-bold hover:underline">+ 增加尺寸部位</button>
-                        </div>
-                        <div id="sizeFieldsContainer" class="space-y-2"></div>
+                <!-- 區塊 2：圖片管理 (整合優化) -->
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 space-y-3">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h3 class="font-bold text-sm text-gray-800 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-uq"></span> 衣服照片
+                        </h3>
+                        <span class="text-[10px] text-gray-400">長按預覽可拖曳排序 (第一張為封面)</span>
                     </div>
 
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">衣服照片 (上傳圖片 或 貼上網址)</label>
-                        <input type="file" id="imageFileInput" accept="image/*" multiple class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 mb-2">
-                        <div id="urlContainer" class="space-y-2">
-                            <input type="url" class="img-url-input w-full border rounded p-2 text-sm" placeholder="貼上圖片網址">
-                        </div>
-                        <button type="button" id="addUrlBtn" class="text-xs text-red-600 font-bold hover:underline mt-1 mb-2">+ 增加網址</button>
-
-                        <!-- 即時預覽與拖曳排序區 -->
-                        <div class="bg-gray-50 p-2.5 rounded border border-gray-200 space-y-1">
-                            <div class="flex justify-between items-center">
-                                <span class="text-[11px] font-bold text-gray-600">圖片即時預覽 (長按圖片可拖曳排序)</span>
-                                <span class="text-[10px] text-gray-400">第一張為封面圖</span>
-                            </div>
-                            <div id="addPreviewContainer" class="flex flex-wrap gap-2 min-h-[60px] p-1 bg-white border border-dashed rounded items-center">
-                                <span class="text-xs text-gray-400 mx-auto select-none">尚未選擇圖片</span>
+                    <!-- 上傳與網址二合一列 -->
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold py-2 px-3 rounded-lg border border-gray-300 flex-shrink-0 transition">
+                                📁 上傳照片
+                                <input type="file" id="imageFileInput" accept="image/*" multiple class="hidden">
+                            </label>
+                            <div class="flex-1 flex gap-1">
+                                <input type="url" id="singleUrlInput" placeholder="或貼上圖片網址..." class="w-full border rounded-lg p-2 text-xs bg-gray-50 focus:bg-white outline-none">
+                                <button type="button" id="addUrlBtn" class="bg-gray-800 text-white text-xs font-bold px-3 rounded-lg flex-shrink-0 hover:bg-black transition">加入</button>
                             </div>
                         </div>
                     </div>
 
-                    <button type="submit" id="submitBtn" class="w-full bg-uq text-white font-bold py-2.5 rounded hover:opacity-90 transition text-sm shadow">
-                        上傳儲存至雲端衣櫥
-                    </button>
-                </form>
-            </div>
+                    <!-- 即時預覽牆 -->
+                    <div id="addPreviewContainer" class="flex flex-wrap gap-2 p-2.5 bg-gray-50 border border-dashed border-gray-300 rounded-lg min-h-[72px] items-center">
+                        <span class="text-xs text-gray-400 mx-auto select-none">尚無圖片，點擊上傳或貼上網址加入</span>
+                    </div>
+                </div>
+
+                <!-- 區塊 3：尺寸細節 -->
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 space-y-3">
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <h3 class="font-bold text-sm text-gray-800 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-uq"></span> 精確尺寸數據 (cm)
+                        </h3>
+                        <button type="button" id="addSizeBtn" class="text-xs text-red-600 font-bold hover:underline">+ 增加部位</button>
+                    </div>
+                    <div id="sizeFieldsContainer" class="space-y-2"></div>
+                </div>
+
+                <!-- 區塊 4：穿搭 / 參考連結 (補回) -->
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-200 space-y-2">
+                    <h3 class="font-bold text-sm text-gray-800 border-b pb-2 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-uq"></span> 穿搭 / 參考連結
+                    </h3>
+                    <input type="url" id="fitUrl" placeholder="貼上 Wear、StyleHint 或官網穿搭連結..." class="w-full border rounded-lg p-2 text-xs bg-gray-50 focus:bg-white outline-none">
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-uq text-white font-bold py-3 rounded-xl hover:opacity-90 transition text-sm shadow-md active:scale-[0.99]">
+                    上傳儲存至雲端衣櫥
+                </button>
+            </form>
         </div>
 
     </main>
@@ -128,7 +151,7 @@
 
     <!-- 編輯 Modal 彈出視窗 -->
     <div id="editModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-lg p-4 w-full max-w-sm max-h-[90vh] overflow-y-auto space-y-3">
+        <div class="bg-white rounded-xl p-4 w-full max-w-sm max-h-[90vh] overflow-y-auto space-y-3">
             <div class="flex justify-between items-center border-b pb-2">
                 <h3 class="font-bold text-sm text-gray-800">編輯衣物資料</h3>
                 <button id="closeEditModal" class="text-gray-400 hover:text-black font-bold">✕</button>
@@ -137,23 +160,23 @@
                 <input type="hidden" id="editItemId">
                 <div>
                     <label class="font-bold text-gray-600">品名</label>
-                    <input type="text" id="editName" class="w-full border rounded p-1.5 mt-1" required>
+                    <input type="text" id="editName" class="w-full border rounded-lg p-2 mt-1" required>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="font-bold text-gray-600">顏色</label>
-                        <input type="text" id="editColor" class="w-full border rounded p-1.5 mt-1">
+                        <input type="text" id="editColor" class="w-full border rounded-lg p-2 mt-1">
                     </div>
                     <div>
                         <label class="font-bold text-gray-600">標籤尺寸</label>
-                        <input type="text" id="editSize" class="w-full border rounded p-1.5 mt-1">
+                        <input type="text" id="editSize" class="w-full border rounded-lg p-2 mt-1">
                     </div>
                 </div>
                 <div>
                     <label class="font-bold text-gray-600">類別</label>
-                    <select id="editCategorySelect" class="w-full border rounded p-1.5 mt-1"></select>
+                    <select id="editCategorySelect" class="w-full border rounded-lg p-2 mt-1 bg-white"></select>
                 </div>
-                <div class="bg-gray-50 p-2 rounded border space-y-2">
+                <div class="bg-gray-50 p-2.5 rounded-lg border space-y-2">
                     <div class="flex justify-between items-center">
                         <span class="font-bold text-gray-700">尺寸數據 (cm)</span>
                         <button type="button" id="addEditSizeBtn" class="text-red-600 font-bold">+ 增加部位</button>
@@ -161,18 +184,22 @@
                     <div id="editSizeContainer" class="space-y-1.5"></div>
                 </div>
                 <div>
-                    <label class="font-bold text-gray-600">圖片管理 (長按可拖曳調換順序)</label>
-                    <input type="file" id="editImageFileInput" accept="image/*" multiple class="w-full mt-1">
-                    <div id="editUrlContainer" class="space-y-1 mt-1">
-                        <input type="url" class="edit-img-url-input w-full border rounded p-1.5" placeholder="貼上新圖片網址">
-                    </div>
-                    <button type="button" id="addEditUrlBtn" class="text-xs text-red-600 font-bold hover:underline mt-1 mb-2">+ 增加網址</button>
-                    
-                    <div id="editImagesContainer" class="flex flex-wrap gap-2 p-2 bg-gray-50 border rounded min-h-[60px] items-center">
-                        <!-- 編輯預覽與拖曳區域 -->
-                    </div>
+                    <label class="font-bold text-gray-600">穿搭 / 參考連結</label>
+                    <input type="url" id="editFitUrl" class="w-full border rounded-lg p-2 mt-1" placeholder="貼上穿搭連結...">
                 </div>
-                <button type="submit" class="w-full bg-uq text-white font-bold py-2 rounded text-sm shadow">更新資料</button>
+                <div>
+                    <label class="font-bold text-gray-600 block mb-1">圖片管理 (長按拖曳順序)</label>
+                    <div class="flex items-center gap-2 mb-2">
+                        <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold py-1.5 px-2.5 rounded border border-gray-300 flex-shrink-0">
+                            📁 新增照片
+                            <input type="file" id="editImageFileInput" accept="image/*" multiple class="hidden">
+                        </label>
+                        <input type="url" id="editSingleUrlInput" placeholder="或貼上圖片網址..." class="w-full border rounded p-1.5 text-xs">
+                        <button type="button" id="addEditUrlBtn" class="bg-gray-800 text-white text-xs font-bold px-2.5 py-1.5 rounded flex-shrink-0">加入</button>
+                    </div>
+                    <div id="editImagesContainer" class="flex flex-wrap gap-2 p-2 bg-gray-50 border rounded-lg min-h-[64px] items-center"></div>
+                </div>
+                <button type="submit" class="w-full bg-uq text-white font-bold py-2.5 rounded-lg text-sm shadow">更新資料</button>
             </form>
         </div>
     </div>
@@ -204,10 +231,10 @@
         let currentCategoryFilter = "ALL";
         let currentSearchQuery = "";
         
-        let addImageList = []; // 新頁面圖片陣列 ({id, src})
-        let editImageList = []; // 編輯頁面圖片陣列 ({id, src})
+        let addImageList = [];
+        let editImageList = [];
 
-        // 初始化 SortableJS 拖曳排序
+        // SortableJS 拖曳初始化
         const addPreviewContainer = document.getElementById('addPreviewContainer');
         const editImagesContainer = document.getElementById('editImagesContainer');
 
@@ -255,20 +282,20 @@
             navInventoryBtn.className = "flex-1 py-4 text-center text-gray-500 font-bold text-base tracking-widest active:bg-gray-50 transition";
         });
 
-        // 圖片預覽渲染 (通用)
+        // 圖片預覽渲染
         function renderPreviewList(type) {
             const container = type === 'add' ? addPreviewContainer : editImagesContainer;
             const list = type === 'add' ? addImageList : editImageList;
             container.innerHTML = '';
 
             if (list.length === 0) {
-                container.innerHTML = `<span class="text-xs text-gray-400 mx-auto select-none">無圖片</span>`;
+                container.innerHTML = `<span class="text-xs text-gray-400 mx-auto select-none">尚無圖片，點擊上傳或貼上網址加入</span>`;
                 return;
             }
 
             list.forEach((src, idx) => {
                 const item = document.createElement('div');
-                item.className = "img-preview-item relative w-14 h-14 border rounded overflow-hidden cursor-move bg-gray-100 flex-shrink-0 shadow-sm";
+                item.className = "img-preview-item relative w-14 h-14 border rounded-lg overflow-hidden cursor-move bg-gray-100 flex-shrink-0 shadow-sm";
                 item.setAttribute('data-src', src);
                 item.innerHTML = `
                     <img src="${src}" class="w-full h-full object-cover pointer-events-none">
@@ -289,7 +316,7 @@
             }
         };
 
-        // 檔案與網址變更事件 - 新增單品
+        // 圖片新增邏輯 (檔案/網址) - 新增頁
         document.getElementById('imageFileInput').addEventListener('change', async (e) => {
             if (e.target.files && e.target.files.length > 0) {
                 for (let file of e.target.files) {
@@ -301,24 +328,21 @@
             }
         });
 
-        document.getElementById('urlContainer').addEventListener('change', (e) => {
-            if (e.target.classList.contains('img-url-input') && e.target.value.trim()) {
-                addImageList.push(e.target.value.trim());
+        const addUrlAction = () => {
+            const input = document.getElementById('singleUrlInput');
+            if (input.value.trim()) {
+                addImageList.push(input.value.trim());
                 renderPreviewList('add');
-                e.target.value = '';
+                input.value = '';
             }
+        };
+
+        document.getElementById('addUrlBtn').addEventListener('click', addUrlAction);
+        document.getElementById('singleUrlInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); addUrlAction(); }
         });
 
-        document.getElementById('addUrlBtn').addEventListener('click', () => {
-            const container = document.getElementById('urlContainer');
-            const input = document.createElement('input');
-            input.type = 'url';
-            input.className = 'img-url-input w-full border rounded p-2 text-sm mt-2';
-            input.placeholder = '貼上圖片網址';
-            container.appendChild(input);
-        });
-
-        // 檔案與網址變更事件 - 編輯單品
+        // 圖片新增邏輯 (檔案/網址) - 編輯頁
         document.getElementById('editImageFileInput').addEventListener('change', async (e) => {
             if (e.target.files && e.target.files.length > 0) {
                 for (let file of e.target.files) {
@@ -330,21 +354,18 @@
             }
         });
 
-        document.getElementById('editUrlContainer').addEventListener('change', (e) => {
-            if (e.target.classList.contains('edit-img-url-input') && e.target.value.trim()) {
-                editImageList.push(e.target.value.trim());
+        const addEditUrlAction = () => {
+            const input = document.getElementById('editSingleUrlInput');
+            if (input.value.trim()) {
+                editImageList.push(input.value.trim());
                 renderPreviewList('edit');
-                e.target.value = '';
+                input.value = '';
             }
-        });
+        };
 
-        document.getElementById('addEditUrlBtn').addEventListener('click', () => {
-            const container = document.getElementById('editUrlContainer');
-            const input = document.createElement('input');
-            input.type = 'url';
-            input.className = 'edit-img-url-input w-full border rounded p-1.5 mt-1';
-            input.placeholder = '貼上新圖片網址';
-            container.appendChild(input);
+        document.getElementById('addEditUrlBtn').addEventListener('click', addEditUrlAction);
+        document.getElementById('editSingleUrlInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); addEditUrlAction(); }
         });
 
         // 類別與品牌
@@ -396,15 +417,15 @@
             else customBrandInput.classList.add('hidden');
         });
 
-        // 尺寸輸入
+        // 尺寸列生成
         function createSizeRow(container, defaultType = sizeOptions[0], defaultValue = "") {
             const row = document.createElement('div');
             row.className = "flex items-center space-x-2 size-row";
             let optionsHtml = sizeOptions.map(opt => `<option value="${opt}" ${opt === defaultType ? 'selected' : ''}>${opt}</option>`).join('') + `<option value="ADD_NEW">+ 自訂部位...</option>`;
             
             row.innerHTML = `
-                <select class="size-type border rounded p-1.5 text-xs w-1/2 bg-white">${optionsHtml}</select>
-                <input type="number" step="0.1" value="${defaultValue}" placeholder="公分 (cm)" class="size-value border rounded p-1.5 text-xs w-1/2">
+                <select class="size-type border rounded-lg p-2 text-xs w-1/2 bg-gray-50 focus:bg-white">${optionsHtml}</select>
+                <input type="number" step="0.1" value="${defaultValue}" placeholder="公分 (cm)" class="size-value border rounded-lg p-2 text-xs w-1/2 bg-gray-50 focus:bg-white outline-none">
                 <button type="button" class="remove-size-btn text-gray-400 hover:text-red-500 font-bold px-1 text-sm">✕</button>
             `;
 
@@ -493,18 +514,21 @@
                     carouselHtml = `<div class="w-full bg-gray-100 aspect-[3/4] flex items-center justify-center text-gray-300 text-xs">無照片</div>`;
                 }
 
+                let fitUrlBadge = item.fitUrl ? `<a href="${item.fitUrl}" target="_blank" class="text-[10px] text-blue-600 hover:underline font-bold">🔗 穿搭連結</a>` : '';
+
                 const card = document.createElement('div');
-                card.className = "bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex flex-col justify-between";
+                card.className = "bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col justify-between";
                 card.innerHTML = `
                     <div>
                         ${carouselHtml}
-                        <div class="p-2 space-y-1">
+                        <div class="p-2.5 space-y-1">
                             <div class="flex justify-between items-center">
                                 ${brandBadge}
                                 <span class="text-[10px] text-gray-500 font-bold">${item.category} (${item.size || 'F'})</span>
                             </div>
                             <h3 class="font-bold text-xs text-gray-900 line-clamp-2 leading-snug" title="${item.name}">${item.name}</h3>
                             ${item.color ? `<div class="text-[10px] text-gray-500">顏色：${item.color}</div>` : ''}
+                            ${fitUrlBadge ? `<div class="pt-0.5">${fitUrlBadge}</div>` : ''}
                             <div class="flex flex-wrap gap-1 pt-1">
                                 ${sizesHtml}
                             </div>
@@ -548,6 +572,7 @@
             document.getElementById('editColor').value = item.color || '';
             document.getElementById('editSize').value = item.size || '';
             document.getElementById('editCategorySelect').value = item.category || categories[0];
+            document.getElementById('editFitUrl').value = item.fitUrl || '';
 
             editImageList = item.images && item.images.length > 0 ? [...item.images] : (item.imgData ? [item.imgData] : []);
             renderPreviewList('edit');
@@ -600,7 +625,7 @@
         renderCategoryFilterBar();
         createSizeRow(document.getElementById('sizeFieldsContainer'));
 
-        // 新增送出
+        // 新增單品送出
         document.getElementById('itemForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             syncImageListFromDOM('add');
@@ -621,6 +646,7 @@
                 size: document.getElementById('size').value,
                 customSizes: customSizes,
                 images: addImageList,
+                fitUrl: document.getElementById('fitUrl').value.trim(),
                 createdAt: Date.now()
             };
 
@@ -629,14 +655,13 @@
                 addImageList = [];
                 renderPreviewList('add');
                 document.getElementById('sizeFieldsContainer').innerHTML = '';
-                document.getElementById('urlContainer').innerHTML = '<input type="url" class="img-url-input w-full border rounded p-2 text-sm" placeholder="貼上圖片網址">';
                 createSizeRow(document.getElementById('sizeFieldsContainer'));
                 customBrandInput.classList.add('hidden');
                 navInventoryBtn.click();
             });
         });
 
-        // 編輯送出
+        // 編輯單品送出
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             syncImageListFromDOM('edit');
@@ -655,7 +680,8 @@
                 size: document.getElementById('editSize').value,
                 category: document.getElementById('editCategorySelect').value,
                 customSizes: customSizes,
-                images: editImageList
+                images: editImageList,
+                fitUrl: document.getElementById('editFitUrl').value.trim()
             };
 
             update(ref(db, `wardrobe/${id}`), updatedData).then(() => {
