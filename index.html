@@ -5,12 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Wardrobe</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入拖曳排序庫 SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         .bg-uq { background-color: #E60012; }
         .bg-gu { background-color: #002244; }
         .text-gu-yellow { color: #FFDD00; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .sortable-ghost { opacity: 0.4; border: 2px dashed #E60012; }
     </style>
 </head>
 <body class="bg-gray-100 font-sans text-gray-900 pb-28">
@@ -24,18 +27,14 @@
         
         <!-- ================= 頁面 1：檢視庫存 ================= -->
         <div id="tabInventory" class="space-y-3">
-            <!-- 搜尋與分類區 -->
             <div class="bg-white rounded-lg shadow-sm p-3 border border-gray-200 space-y-2">
                 <div class="relative">
                     <input type="text" id="searchInput" placeholder="搜尋品名、品牌或顏色..." class="w-full bg-gray-50 border border-gray-200 rounded-full py-2 px-4 text-xs focus:ring-2 focus:ring-red-500 outline-none">
                 </div>
                 
-                <div id="categoryFilterBar" class="flex space-x-2 overflow-x-auto no-scrollbar py-1">
-                    <!-- 動態載入分類按鈕 -->
-                </div>
+                <div id="categoryFilterBar" class="flex space-x-2 overflow-x-auto no-scrollbar py-1"></div>
             </div>
 
-            <!-- 衣物卡片列表區 (雙欄排版) -->
             <div id="wardrobeList" class="grid grid-cols-2 gap-2.5">
                 <div class="col-span-2 text-center py-8 text-gray-400 text-sm">雲端資料載入中...</div>
             </div>
@@ -71,9 +70,7 @@
                     <div class="grid grid-cols-2 gap-2">
                         <div>
                             <label class="block text-xs font-bold text-gray-600 mb-1">類別</label>
-                            <select id="categorySelect" class="w-full border rounded p-2 text-sm">
-                                <!-- 動態類別 -->
-                            </select>
+                            <select id="categorySelect" class="w-full border rounded p-2 text-sm"></select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-600 mb-1">標籤尺寸</label>
@@ -86,18 +83,27 @@
                             <span class="text-xs font-bold text-gray-700">精確尺寸紀錄 (cm)</span>
                             <button type="button" id="addSizeBtn" class="text-xs text-red-600 font-bold hover:underline">+ 增加尺寸部位</button>
                         </div>
-                        <div id="sizeFieldsContainer" class="space-y-2">
-                            <!-- 動態尺寸輸入框 -->
-                        </div>
+                        <div id="sizeFieldsContainer" class="space-y-2"></div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">衣服照片 (可上傳多張圖片 或 貼上多個網址)</label>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">衣服照片 (上傳圖片 或 貼上網址)</label>
                         <input type="file" id="imageFileInput" accept="image/*" multiple class="w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 mb-2">
                         <div id="urlContainer" class="space-y-2">
                             <input type="url" class="img-url-input w-full border rounded p-2 text-sm" placeholder="貼上圖片網址">
                         </div>
-                        <button type="button" id="addUrlBtn" class="text-xs text-red-600 font-bold hover:underline mt-1">+ 增加網址</button>
+                        <button type="button" id="addUrlBtn" class="text-xs text-red-600 font-bold hover:underline mt-1 mb-2">+ 增加網址</button>
+
+                        <!-- 即時預覽與拖曳排序區 -->
+                        <div class="bg-gray-50 p-2.5 rounded border border-gray-200 space-y-1">
+                            <div class="flex justify-between items-center">
+                                <span class="text-[11px] font-bold text-gray-600">圖片即時預覽 (長按圖片可拖曳排序)</span>
+                                <span class="text-[10px] text-gray-400">第一張為封面圖</span>
+                            </div>
+                            <div id="addPreviewContainer" class="flex flex-wrap gap-2 min-h-[60px] p-1 bg-white border border-dashed rounded items-center">
+                                <span class="text-xs text-gray-400 mx-auto select-none">尚未選擇圖片</span>
+                            </div>
+                        </div>
                     </div>
 
                     <button type="submit" id="submitBtn" class="w-full bg-uq text-white font-bold py-2.5 rounded hover:opacity-90 transition text-sm shadow">
@@ -109,7 +115,7 @@
 
     </main>
 
-    <!-- 加大尺寸底部 Tab 導覽列 -->
+    <!-- 底部 Tab 導覽列 -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex justify-around items-center z-50 max-w-md mx-auto shadow-lg">
         <button id="navInventoryBtn" class="flex-1 py-4 text-center text-red-600 font-black text-base tracking-widest active:bg-gray-50 transition">
             檢視庫存
@@ -155,13 +161,16 @@
                     <div id="editSizeContainer" class="space-y-1.5"></div>
                 </div>
                 <div>
-                    <label class="font-bold text-gray-600">新增/替換照片 (可多選)</label>
+                    <label class="font-bold text-gray-600">圖片管理 (長按可拖曳調換順序)</label>
                     <input type="file" id="editImageFileInput" accept="image/*" multiple class="w-full mt-1">
                     <div id="editUrlContainer" class="space-y-1 mt-1">
                         <input type="url" class="edit-img-url-input w-full border rounded p-1.5" placeholder="貼上新圖片網址">
                     </div>
-                    <button type="button" id="addEditUrlBtn" class="text-xs text-red-600 font-bold hover:underline mt-1">+ 增加網址</button>
-                    <div id="existingImagesContainer" class="mt-2 flex flex-wrap gap-1"></div>
+                    <button type="button" id="addEditUrlBtn" class="text-xs text-red-600 font-bold hover:underline mt-1 mb-2">+ 增加網址</button>
+                    
+                    <div id="editImagesContainer" class="flex flex-wrap gap-2 p-2 bg-gray-50 border rounded min-h-[60px] items-center">
+                        <!-- 編輯預覽與拖曳區域 -->
+                    </div>
                 </div>
                 <button type="submit" class="w-full bg-uq text-white font-bold py-2 rounded text-sm shadow">更新資料</button>
             </form>
@@ -194,9 +203,39 @@
         let allData = {};
         let currentCategoryFilter = "ALL";
         let currentSearchQuery = "";
-        let currentEditImages = [];
+        
+        let addImageList = []; // 新頁面圖片陣列 ({id, src})
+        let editImageList = []; // 編輯頁面圖片陣列 ({id, src})
 
-        // Tab 切換邏輯
+        // 初始化 SortableJS 拖曳排序
+        const addPreviewContainer = document.getElementById('addPreviewContainer');
+        const editImagesContainer = document.getElementById('editImagesContainer');
+
+        new Sortable(addPreviewContainer, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: () => syncImageListFromDOM('add')
+        });
+
+        new Sortable(editImagesContainer, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: () => syncImageListFromDOM('edit')
+        });
+
+        function syncImageListFromDOM(type) {
+            const container = type === 'add' ? addPreviewContainer : editImagesContainer;
+            const items = container.querySelectorAll('.img-preview-item');
+            const newArr = [];
+            items.forEach(el => {
+                const src = el.getAttribute('data-src');
+                if (src) newArr.push(src);
+            });
+            if (type === 'add') addImageList = newArr;
+            else editImageList = newArr;
+        }
+
+        // Tab 切換
         const tabInventory = document.getElementById('tabInventory');
         const tabAdd = document.getElementById('tabAdd');
         const navInventoryBtn = document.getElementById('navInventoryBtn');
@@ -216,26 +255,99 @@
             navInventoryBtn.className = "flex-1 py-4 text-center text-gray-500 font-bold text-base tracking-widest active:bg-gray-50 transition";
         });
 
-        // 多網址新增邏輯
+        // 圖片預覽渲染 (通用)
+        function renderPreviewList(type) {
+            const container = type === 'add' ? addPreviewContainer : editImagesContainer;
+            const list = type === 'add' ? addImageList : editImageList;
+            container.innerHTML = '';
+
+            if (list.length === 0) {
+                container.innerHTML = `<span class="text-xs text-gray-400 mx-auto select-none">無圖片</span>`;
+                return;
+            }
+
+            list.forEach((src, idx) => {
+                const item = document.createElement('div');
+                item.className = "img-preview-item relative w-14 h-14 border rounded overflow-hidden cursor-move bg-gray-100 flex-shrink-0 shadow-sm";
+                item.setAttribute('data-src', src);
+                item.innerHTML = `
+                    <img src="${src}" class="w-full h-full object-cover pointer-events-none">
+                    <button type="button" class="absolute top-0 right-0 bg-black/60 hover:bg-red-600 text-white w-4 h-4 text-[10px] flex items-center justify-center font-bold" onclick="removeImage('${type}', ${idx})">✕</button>
+                    ${idx === 0 ? '<span class="absolute bottom-0 left-0 right-0 bg-red-600 text-white text-[9px] text-center font-bold py-0.5">封面</span>' : ''}
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        window.removeImage = function(type, index) {
+            if (type === 'add') {
+                addImageList.splice(index, 1);
+                renderPreviewList('add');
+            } else {
+                editImageList.splice(index, 1);
+                renderPreviewList('edit');
+            }
+        };
+
+        // 檔案與網址變更事件 - 新增單品
+        document.getElementById('imageFileInput').addEventListener('change', async (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                for (let file of e.target.files) {
+                    const compressed = await processImageFile(file);
+                    addImageList.push(compressed);
+                }
+                renderPreviewList('add');
+                e.target.value = '';
+            }
+        });
+
+        document.getElementById('urlContainer').addEventListener('change', (e) => {
+            if (e.target.classList.contains('img-url-input') && e.target.value.trim()) {
+                addImageList.push(e.target.value.trim());
+                renderPreviewList('add');
+                e.target.value = '';
+            }
+        });
+
         document.getElementById('addUrlBtn').addEventListener('click', () => {
             const container = document.getElementById('urlContainer');
             const input = document.createElement('input');
             input.type = 'url';
-            input.className = 'img-url-input w-full border rounded p-2 text-sm';
+            input.className = 'img-url-input w-full border rounded p-2 text-sm mt-2';
             input.placeholder = '貼上圖片網址';
             container.appendChild(input);
+        });
+
+        // 檔案與網址變更事件 - 編輯單品
+        document.getElementById('editImageFileInput').addEventListener('change', async (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                for (let file of e.target.files) {
+                    const compressed = await processImageFile(file);
+                    editImageList.push(compressed);
+                }
+                renderPreviewList('edit');
+                e.target.value = '';
+            }
+        });
+
+        document.getElementById('editUrlContainer').addEventListener('change', (e) => {
+            if (e.target.classList.contains('edit-img-url-input') && e.target.value.trim()) {
+                editImageList.push(e.target.value.trim());
+                renderPreviewList('edit');
+                e.target.value = '';
+            }
         });
 
         document.getElementById('addEditUrlBtn').addEventListener('click', () => {
             const container = document.getElementById('editUrlContainer');
             const input = document.createElement('input');
             input.type = 'url';
-            input.className = 'edit-img-url-input w-full border rounded p-1.5';
+            input.className = 'edit-img-url-input w-full border rounded p-1.5 mt-1';
             input.placeholder = '貼上新圖片網址';
             container.appendChild(input);
         });
 
-        // 類別選單渲染
+        // 類別與品牌
         function renderCategorySelects() {
             const optionsHtml = categories.map(c => `<option value="${c}">${c}</option>`).join('') + `<option value="ADD_NEW">+ 新增自訂類別...</option>`;
             document.getElementById('categorySelect').innerHTML = optionsHtml;
@@ -277,7 +389,6 @@
             });
         }
 
-        // 品牌選單切換
         const brandSelect = document.getElementById('brandSelect');
         const customBrandInput = document.getElementById('customBrand');
         brandSelect.addEventListener('change', () => {
@@ -285,7 +396,7 @@
             else customBrandInput.classList.add('hidden');
         });
 
-        // 尺寸輸入欄位生成
+        // 尺寸輸入
         function createSizeRow(container, defaultType = sizeOptions[0], defaultValue = "") {
             const row = document.createElement('div');
             row.className = "flex items-center space-x-2 size-row";
@@ -314,19 +425,15 @@
             container.appendChild(row);
         }
 
-        document.getElementById('addSizeBtn').addEventListener('click', () => {
-            createSizeRow(document.getElementById('sizeFieldsContainer'));
-        });
-        document.getElementById('addEditSizeBtn').addEventListener('click', () => {
-            createSizeRow(document.getElementById('editSizeContainer'));
-        });
+        document.getElementById('addSizeBtn').addEventListener('click', () => createSizeRow(document.getElementById('sizeFieldsContainer')));
+        document.getElementById('addEditSizeBtn').addEventListener('click', () => createSizeRow(document.getElementById('editSizeContainer')));
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
             currentSearchQuery = e.target.value.toLowerCase().trim();
             renderList();
         });
 
-        // 渲染列表 (多圖輪播支援)
+        // 渲染列表
         function renderList() {
             const listDiv = document.getElementById('wardrobeList');
             listDiv.innerHTML = '';
@@ -361,7 +468,6 @@
                     item.customSizes.map(s => `<span class="bg-gray-100 text-gray-700 px-1 py-0.5 text-[10px] rounded">${s.type}:${s.val}cm</span>`).join('') :
                     `<span class="text-gray-400 text-[10px]">無尺寸細節</span>`;
 
-                // 處理多圖片陣列相容性
                 let images = [];
                 if (item.images && Array.isArray(item.images) && item.images.length > 0) {
                     images = item.images;
@@ -369,7 +475,6 @@
                     images = [item.imgData];
                 }
 
-                // 生成圖片輪播 HTML
                 let carouselHtml = '';
                 if (images.length > 0) {
                     carouselHtml = `
@@ -425,16 +530,11 @@
             });
         }
 
-        // 輪播點點指示器即時更新
         window.updateDots = function(el) {
             const index = Math.round(el.scrollLeft / el.clientWidth);
             const dots = el.parentElement.querySelectorAll('.dot');
             dots.forEach((dot, idx) => {
-                if (idx === index) {
-                    dot.className = "dot w-1.5 h-1.5 rounded-full bg-white shadow-sm";
-                } else {
-                    dot.className = "dot w-1.5 h-1.5 rounded-full bg-white/50 shadow-sm";
-                }
+                dot.className = idx === index ? "dot w-1.5 h-1.5 rounded-full bg-white shadow-sm" : "dot w-1.5 h-1.5 rounded-full bg-white/50 shadow-sm";
             });
         }
 
@@ -449,8 +549,8 @@
             document.getElementById('editSize').value = item.size || '';
             document.getElementById('editCategorySelect').value = item.category || categories[0];
 
-            currentEditImages = item.images && item.images.length > 0 ? [...item.images] : (item.imgData ? [item.imgData] : []);
-            renderExistingImages();
+            editImageList = item.images && item.images.length > 0 ? [...item.images] : (item.imgData ? [item.imgData] : []);
+            renderPreviewList('edit');
 
             const editSizeContainer = document.getElementById('editSizeContainer');
             editSizeContainer.innerHTML = '';
@@ -462,25 +562,6 @@
 
             document.getElementById('editModal').classList.remove('hidden');
         }
-
-        function renderExistingImages() {
-            const container = document.getElementById('existingImagesContainer');
-            container.innerHTML = '';
-            currentEditImages.forEach((img, index) => {
-                const wrapper = document.createElement('div');
-                wrapper.className = "relative w-12 h-12 border rounded overflow-hidden";
-                wrapper.innerHTML = `
-                    <img src="${img}" class="w-full h-full object-cover">
-                    <button type="button" class="absolute top-0 right-0 bg-red-600 text-white w-4 h-4 text-[10px] flex items-center justify-center font-bold" onclick="removeEditImage(${index})">✕</button>
-                `;
-                container.appendChild(wrapper);
-            });
-        }
-
-        window.removeEditImage = function(index) {
-            currentEditImages.splice(index, 1);
-            renderExistingImages();
-        };
 
         document.getElementById('closeEditModal').addEventListener('click', () => {
             document.getElementById('editModal').classList.add('hidden');
@@ -519,9 +600,11 @@
         renderCategoryFilterBar();
         createSizeRow(document.getElementById('sizeFieldsContainer'));
 
-        // 新增送出 (處理多圖)
+        // 新增送出
         document.getElementById('itemForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            syncImageListFromDOM('add');
+
             let finalBrand = brandSelect.value === 'Other' ? (customBrandInput.value.trim() || '其他品牌') : brandSelect.value;
             const customSizes = [];
             document.querySelectorAll('#sizeFieldsContainer .size-row').forEach(row => {
@@ -530,21 +613,6 @@
                 if (val && type !== 'ADD_NEW') customSizes.push({ type, val });
             });
 
-            // 收集多圖 (檔案 + 網址)
-            let imageList = [];
-            const urlInputs = document.querySelectorAll('.img-url-input');
-            urlInputs.forEach(input => {
-                if (input.value.trim()) imageList.push(input.value.trim());
-            });
-
-            const fileInput = document.getElementById('imageFileInput');
-            if (fileInput.files && fileInput.files.length > 0) {
-                for (let file of fileInput.files) {
-                    const compressed = await processImageFile(file);
-                    imageList.push(compressed);
-                }
-            }
-
             const newItem = {
                 brand: finalBrand,
                 name: document.getElementById('name').value,
@@ -552,12 +620,14 @@
                 category: document.getElementById('categorySelect').value,
                 size: document.getElementById('size').value,
                 customSizes: customSizes,
-                images: imageList,
+                images: addImageList,
                 createdAt: Date.now()
             };
 
             push(wardrobeRef, newItem).then(() => {
                 e.target.reset();
+                addImageList = [];
+                renderPreviewList('add');
                 document.getElementById('sizeFieldsContainer').innerHTML = '';
                 document.getElementById('urlContainer').innerHTML = '<input type="url" class="img-url-input w-full border rounded p-2 text-sm" placeholder="貼上圖片網址">';
                 createSizeRow(document.getElementById('sizeFieldsContainer'));
@@ -566,9 +636,11 @@
             });
         });
 
-        // 編輯送出 (處理多圖)
+        // 編輯送出
         document.getElementById('editForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            syncImageListFromDOM('edit');
+
             const id = document.getElementById('editItemId').value;
             const customSizes = [];
             document.querySelectorAll('#editSizeContainer .size-row').forEach(row => {
@@ -577,28 +649,13 @@
                 if (val && type !== 'ADD_NEW') customSizes.push({ type, val });
             });
 
-            let finalImages = [...currentEditImages];
-
-            const editUrlInputs = document.querySelectorAll('.edit-img-url-input');
-            editUrlInputs.forEach(input => {
-                if (input.value.trim()) finalImages.push(input.value.trim());
-            });
-
-            const editFileInput = document.getElementById('editImageFileInput');
-            if (editFileInput.files && editFileInput.files.length > 0) {
-                for (let file of editFileInput.files) {
-                    const compressed = await processImageFile(file);
-                    finalImages.push(compressed);
-                }
-            }
-
             let updatedData = {
                 name: document.getElementById('editName').value,
                 color: document.getElementById('editColor').value,
                 size: document.getElementById('editSize').value,
                 category: document.getElementById('editCategorySelect').value,
                 customSizes: customSizes,
-                images: finalImages
+                images: editImageList
             };
 
             update(ref(db, `wardrobe/${id}`), updatedData).then(() => {
